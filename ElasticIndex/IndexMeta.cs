@@ -1,8 +1,10 @@
-using Nest;
+// Copyright (c) 2007-2018 ppy Pty Ltd <contact@ppy.sh>.
+// Licensed under the MIT Licence - https://raw.githubusercontent.com/ppy/osu-server/master/LICENCE
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using Nest;
 
 namespace ElasticIndex
 {
@@ -10,9 +12,9 @@ namespace ElasticIndex
     public class IndexMeta
     {
         static readonly ElasticClient Client = new ElasticClient(
-          new ConnectionSettings(
-            new Uri(Program.Configuration["elasticsearch:host"])
-          ).DefaultIndex($"{Program.Configuration["elasticsearch:prefix"]}_index_meta")
+            new ConnectionSettings(
+                new Uri(Program.Configuration["elasticsearch:host"])
+            ).DefaultIndex($"{Program.Configuration["elasticsearch:prefix"]}_index_meta")
         );
 
 
@@ -30,7 +32,7 @@ namespace ElasticIndex
 
         public static void Update(IndexMeta indexMeta)
         {
-            IndexMeta.Client.IndexDocumentAsync(indexMeta);
+            Client.IndexDocumentAsync(indexMeta);
         }
 
         public static IndexMeta GetByName(string name)

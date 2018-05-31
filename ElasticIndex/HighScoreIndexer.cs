@@ -1,15 +1,16 @@
-using Dapper;
-using Elasticsearch.Net;
-using Microsoft.Extensions.Configuration;
-using MySql.Data.MySqlClient;
-using Nest;
+// Copyright (c) 2007-2018 ppy Pty Ltd <contact@ppy.sh>.
+// Licensed under the MIT Licence - https://raw.githubusercontent.com/ppy/osu-server/master/LICENCE
+
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Elasticsearch.Net;
+using Microsoft.Extensions.Configuration;
+using MySql.Data.MySqlClient;
+using Nest;
 
 namespace ElasticIndex
 {
@@ -25,10 +26,10 @@ namespace ElasticIndex
 
         public HighScoreIndexer()
         {
-            if (!String.IsNullOrEmpty(Program.Configuration["resume_from"]))
+            if (!string.IsNullOrEmpty(Program.Configuration["resume_from"]))
                 resumeFrom = long.Parse(Program.Configuration["resume_from"]);
 
-            if (!String.IsNullOrEmpty(Program.Configuration["chunk_size"]))
+            if (!string.IsNullOrEmpty(Program.Configuration["chunk_size"]))
                 chunkSize = int.Parse(Program.Configuration["chunk_size"]);
 
             dbConnection = new MySqlConnection(Program.Configuration.GetConnectionString("osu"));
@@ -110,7 +111,7 @@ namespace ElasticIndex
                 var chunks = Model.Chunk<T>(dbConnection, chunkSize, resumeFrom);
                 foreach (var chunk in chunks)
                 {
-                    var bulkDescriptor = new Nest.BulkDescriptor().Index(index);
+                    var bulkDescriptor = new BulkDescriptor().Index(index);
                     bulkDescriptor.IndexMany<T>(chunk);
 
                     Task task = ElasticClient.BulkAsync(bulkDescriptor);
@@ -132,7 +133,7 @@ namespace ElasticIndex
 
             var span = DateTime.Now - start;
             Console.WriteLine($"{count} records took {span}");
-            if (count > 0) Console.WriteLine($"{count/span.TotalSeconds} records/s");
+            if (count > 0) Console.WriteLine($"{count / span.TotalSeconds} records/s");
 
             UpdateAlias(name, index);
 

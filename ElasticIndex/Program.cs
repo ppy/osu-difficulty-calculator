@@ -1,37 +1,34 @@
-﻿using Dapper;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.EnvironmentVariables;
-using Microsoft.Extensions.Configuration.Json;
-using MySql.Data.MySqlClient;
-using Nest;
+﻿// Copyright (c) 2007-2018 ppy Pty Ltd <contact@ppy.sh>.
+// Licensed under the MIT Licence - https://raw.githubusercontent.com/ppy/osu-server/master/LICENCE
+
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Data;
+using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
+using Dapper;
+using Microsoft.Extensions.Configuration;
 
 namespace ElasticIndex
 {
     class Program
     {
         // TODO: readonly
-        public readonly static IImmutableList<string> ValidModes = ImmutableList.Create("osu", "mania", "taiko", "fruits");
+        public static readonly IImmutableList<string> ValidModes = ImmutableList.Create("osu", "mania", "taiko", "fruits");
 
         internal static IConfigurationRoot Configuration { get; private set; }
 
         public void Run()
         {
             var prefix = Configuration["elasticsearch:prefix"];
-            var modesStr = Configuration["modes"] ?? String.Empty;
+            var modesStr = Configuration["modes"] ?? string.Empty;
             var modes = modesStr.Split(',', StringSplitOptions.RemoveEmptyEntries);
             var suffix = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
 
             foreach (var mode in modes.Intersect(ValidModes))
             {
                 var indexName = $"{prefix}high_scores_{mode}";
-                var upcase = System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToTitleCase(mode);
+                var upcase = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(mode);
                 var className = $"{typeof(HighScore).Namespace}.HighScore{upcase}";
 
                 Type indexerType = typeof(HighScoreIndexer<>)
@@ -45,8 +42,8 @@ namespace ElasticIndex
 
         static void Main(string[] args)
         {
-            Program.Configuration = BuildConfiguration();
-            Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
+            Configuration = BuildConfiguration();
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
             new Program().Run();
         }
 
@@ -55,11 +52,11 @@ namespace ElasticIndex
             var env = Environment.GetEnvironmentVariable("APP_ENV") ?? "development";
 
             return new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
-                .AddJsonFile($"appsettings.{env}.json", optional: true, reloadOnChange: false)
-                .AddEnvironmentVariables()
-                .Build();
+                   .SetBasePath(Directory.GetCurrentDirectory())
+                   .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+                   .AddJsonFile($"appsettings.{env}.json", optional: true, reloadOnChange: false)
+                   .AddEnvironmentVariables()
+                   .Build();
         }
     }
 }

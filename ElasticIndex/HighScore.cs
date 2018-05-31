@@ -1,8 +1,11 @@
-using Dapper.Contrib.Extensions;
-using Nest;
+// Copyright (c) 2007-2018 ppy Pty Ltd <contact@ppy.sh>.
+// Licensed under the MIT Licence - https://raw.githubusercontent.com/ppy/osu-server/master/LICENCE
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dapper.Contrib.Extensions;
+using Nest;
 
 namespace ElasticIndex
 {
@@ -12,7 +15,10 @@ namespace ElasticIndex
     {
         [Computed]
         [Ignore]
-        public override long CursorValue { get { return ScoreId; } }
+        public override long CursorValue
+        {
+            get { return ScoreId; }
+        }
 
         // Properties ordered in the order they appear in the table.
 
@@ -20,10 +26,7 @@ namespace ElasticIndex
         [Ignore]
         public string Id
         {
-            get
-            {
-                return $"{this.UserId}-{this.BeatmapId}-{this.EnabledMods}";
-            }
+            get { return $"{UserId}-{BeatmapId}-{EnabledMods}"; }
         }
 
         [Number(NumberType.Long, Name = "score_id")]
@@ -72,10 +75,7 @@ namespace ElasticIndex
         [Keyword(Name = "enabled_mods")]
         public List<string> EnabledModsList
         {
-            get
-            {
-                return HighScore.BitsetToList(EnabledMods);
-            }
+            get { return BitsetToList(EnabledMods); }
         }
 
         [Date(Name = "date", Format = "strict_date_optional_time||epoch_millis||yyyy-MM-dd HH:mm:ss")]
@@ -126,11 +126,11 @@ namespace ElasticIndex
             var mods = new Dictionary<int, string>();
             var impliedIds = new List<int>();
 
-            foreach (var key in HighScore.AvailableMods.Keys)
+            foreach (var key in AvailableMods.Keys)
             {
                 if ((bitset & (1 << key)) == 0) continue;
 
-                var tuple = HighScore.AvailableMods[key];
+                var tuple = AvailableMods[key];
                 if (tuple.Item2.HasValue) impliedIds.Add(tuple.Item2.Value);
 
                 mods[key] = tuple.Item1;
