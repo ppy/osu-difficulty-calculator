@@ -39,51 +39,6 @@ namespace ElasticIndex
             );
         }
 
-        /// <summary>
-        /// Attemps to find the matching index or creates a new one.
-        /// </summary>
-        /// <param name="name">Name of the alias to find the matching index for.</param>
-        /// <returns>Name of index found or created.</returns>
-        private string findOrCreateIndex(string name)
-        {
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine($"Find or create index for `{name}`...");
-            var metas = IndexMeta.GetByAlias(name).ToList();
-            var indices = elasticClient.GetIndicesPointingToAlias(name);
-
-            string index = metas.FirstOrDefault(m => indices.Contains(m.Index))?.Index;
-            // 3 cases are handled:
-            // 1. Index was already aliased and has tracking information; likely resuming from a completed job.
-            if (index != null)
-            {
-                Console.WriteLine($"Found matching aliased index `{index}`.");
-                return index;
-            }
-
-            // 2. Index has not been aliased and has tracking information; likely resuming from an imcomplete job.
-            index = metas.FirstOrDefault()?.Index;
-            if (index != null)
-            {
-                Console.WriteLine($"Found previous index `{index}`.");
-                return index;
-            }
-
-            // 3. Not aliased and no tracking information; likely starting from scratch
-            var suffix = Suffix ?? DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
-            index = $"{name}_{suffix}";
-
-            Console.WriteLine($"Creating `{index}` for `{name}`.");
-            // create by supplying the json file instead of the attributed class because we're not
-            // mapping every field but still want everything for _source.
-            var json = File.ReadAllText(Path.GetFullPath("schemas/high_scores.json"));
-            elasticClient.LowLevel.IndicesCreate<DynamicResponse>(index, json);
-
-            return index;
-
-            // TODO: cases not covered should throw an Exception (aliased but not tracked, etc).
-        }
-
         public void Run(string name)
         {
             var pendingTasks = new ConcurrentBag<Task>();
@@ -141,6 +96,51 @@ namespace ElasticIndex
             Console.WriteLine("Waiting for all tasks to complete...");
             Task.WaitAll(pendingTasks.ToArray());
             Console.WriteLine("All tasks completed.");
+        }
+
+        /// <summary>
+        /// Attemps to find the matching index or creates a new one.
+        /// </summary>
+        /// <param name="name">Name of the alias to find the matching index for.</param>
+        /// <returns>Name of index found or created.</returns>
+        private string findOrCreateIndex(string name)
+        {
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine($"Find or create index for `{name}`...");
+            var metas = IndexMeta.GetByAlias(name).ToList();
+            var indices = elasticClient.GetIndicesPointingToAlias(name);
+
+            string index = metas.FirstOrDefault(m => indices.Contains(m.Index))?.Index;
+            // 3 cases are handled:
+            // 1. Index was already aliased and has tracking information; likely resuming from a completed job.
+            if (index != null)
+            {
+                Console.WriteLine($"Found matching aliased index `{index}`.");
+                return index;
+            }
+
+            // 2. Index has not been aliased and has tracking information; likely resuming from an imcomplete job.
+            index = metas.FirstOrDefault()?.Index;
+            if (index != null)
+            {
+                Console.WriteLine($"Found previous index `{index}`.");
+                return index;
+            }
+
+            // 3. Not aliased and no tracking information; likely starting from scratch
+            var suffix = Suffix ?? DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+            index = $"{name}_{suffix}";
+
+            Console.WriteLine($"Creating `{index}` for `{name}`.");
+            // create by supplying the json file instead of the attributed class because we're not
+            // mapping every field but still want everything for _source.
+            var json = File.ReadAllText(Path.GetFullPath("schemas/high_scores.json"));
+            elasticClient.LowLevel.IndicesCreate<DynamicResponse>(index, json);
+
+            return index;
+
+            // TODO: cases not covered should throw an Exception (aliased but not tracked, etc).
         }
 
         private void updateAlias(string alias, string index)
