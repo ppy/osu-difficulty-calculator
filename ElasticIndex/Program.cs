@@ -52,9 +52,12 @@ namespace ElasticIndex
 
         private static IConfigurationRoot BuildConfiguration()
         {
+            var env = Environment.GetEnvironmentVariable("APP_ENV") ?? "development";
+
             return new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+                .AddJsonFile($"appsettings.{env}.json", optional: true, reloadOnChange: false)
                 .AddEnvironmentVariables()
                 .Build();
         }
