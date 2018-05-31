@@ -1,0 +1,9 @@
+{
+  // comments are supported.
+  "ConnectionStrings": {
+    "osu": "Server=localhost;Database=osu;Uid=username;SslMode=None;"
+  },
+  "elasticsearch": {
+    "host": "http://localhost:9200"
+  },
+}
