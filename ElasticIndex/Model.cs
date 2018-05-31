@@ -29,17 +29,13 @@ namespace ElasticIndex
             while (lastId != null)
             {
                 string query = $"select * from {table} where {cursorColumn} > @lastId order by {cursorColumn} asc limit @chunkSize;";
-                var parameters = new { lastId = lastId, chunkSize = chunkSize };
+                var parameters = new { lastId, chunkSize };
                 Console.WriteLine("{0} {1}", query, parameters);
                 var queryResult = dbConnection.Query<T>(query, parameters).AsList();
 
                 lastId = queryResult.LastOrDefault()?.CursorValue;
-                if (!lastId.HasValue) yield break;
-
-                yield return queryResult;
+                if (lastId.HasValue) yield return queryResult;
             }
-
-            yield break;
         }
     }
 }

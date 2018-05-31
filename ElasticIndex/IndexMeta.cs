@@ -11,7 +11,7 @@ namespace ElasticIndex
     [ElasticsearchType(Name = "index_meta", IdProperty = nameof(Index))]
     public class IndexMeta
     {
-        static readonly ElasticClient Client = new ElasticClient(
+        private static readonly ElasticClient client = new ElasticClient(
             new ConnectionSettings(
                 new Uri(Program.Configuration["elasticsearch:host"])
             ).DefaultIndex($"{Program.Configuration["elasticsearch:prefix"]}_index_meta")
@@ -32,12 +32,12 @@ namespace ElasticIndex
 
         public static void Update(IndexMeta indexMeta)
         {
-            Client.IndexDocumentAsync(indexMeta);
+            client.IndexDocumentAsync(indexMeta);
         }
 
         public static IndexMeta GetByName(string name)
         {
-            var response = Client.Search<IndexMeta>(s => s
+            var response = client.Search<IndexMeta>(s => s
                 .Query(q => q
                     .Ids(d => d.Values(name))
                 )
@@ -48,7 +48,7 @@ namespace ElasticIndex
 
         public static IEnumerable<IndexMeta> GetByAlias(string name)
         {
-            var response = Client.Search<IndexMeta>(s => s
+            var response = client.Search<IndexMeta>(s => s
                 .Query(q => q
                     .Term(d => d.Alias, name)
                 )

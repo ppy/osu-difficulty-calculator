@@ -11,10 +11,10 @@ using Microsoft.Extensions.Configuration;
 
 namespace ElasticIndex
 {
-    class Program
+    public class Program
     {
         // TODO: readonly
-        public static readonly IImmutableList<string> ValidModes = ImmutableList.Create("osu", "mania", "taiko", "fruits");
+        public static readonly IImmutableList<string> VALID_MODES = ImmutableList.Create("osu", "mania", "taiko", "fruits");
 
         internal static IConfigurationRoot Configuration { get; private set; }
 
@@ -25,7 +25,7 @@ namespace ElasticIndex
             var modes = modesStr.Split(',', StringSplitOptions.RemoveEmptyEntries);
             var suffix = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
 
-            foreach (var mode in modes.Intersect(ValidModes))
+            foreach (var mode in modes.Intersect(VALID_MODES))
             {
                 var indexName = $"{prefix}high_scores_{mode}";
                 var upcase = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(mode);
@@ -40,14 +40,14 @@ namespace ElasticIndex
             }
         }
 
-        static void Main(string[] args)
+        public static void Main()
         {
-            Configuration = BuildConfiguration();
+            Configuration = buildConfiguration();
             DefaultTypeMap.MatchNamesWithUnderscores = true;
             new Program().Run();
         }
 
-        private static IConfigurationRoot BuildConfiguration()
+        private static IConfigurationRoot buildConfiguration()
         {
             var env = Environment.GetEnvironmentVariable("APP_ENV") ?? "development";
 

@@ -11,7 +11,8 @@ namespace ElasticIndex
     [AttributeUsage(AttributeTargets.Class)]
     public class CursorColumnAttribute : Attribute
     {
-        public string Name { get; private set; }
+        public string Name { get; }
+
         public CursorColumnAttribute(string name) => Name = name;
     }
 }

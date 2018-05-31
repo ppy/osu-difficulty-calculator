@@ -15,19 +15,13 @@ namespace ElasticIndex
     {
         [Computed]
         [Ignore]
-        public override long CursorValue
-        {
-            get { return ScoreId; }
-        }
+        public override long CursorValue => ScoreId;
 
         // Properties ordered in the order they appear in the table.
 
         [Computed]
         [Ignore]
-        public string Id
-        {
-            get { return $"{UserId}-{BeatmapId}-{EnabledMods}"; }
-        }
+        public string Id => $"{UserId}-{BeatmapId}-{EnabledMods}";
 
         [Number(NumberType.Long, Name = "score_id")]
         public uint ScoreId { get; set; }
@@ -73,10 +67,7 @@ namespace ElasticIndex
 
         [Computed]
         [Keyword(Name = "enabled_mods")]
-        public List<string> EnabledModsList
-        {
-            get { return BitsetToList(EnabledMods); }
-        }
+        public List<string> EnabledModsList => BitsetToList(EnabledMods);
 
         [Date(Name = "date", Format = "strict_date_optional_time||epoch_millis||yyyy-MM-dd HH:mm:ss")]
         public DateTimeOffset Date { get; set; }
@@ -94,7 +85,7 @@ namespace ElasticIndex
         public string CountryAcronym { get; set; }
 
         // TODO: mod-related; move out.
-        public static readonly Dictionary<int, Tuple<string, int?>> AvailableMods = new Dictionary<int, Tuple<string, int?>>()
+        public static readonly Dictionary<int, Tuple<string, int?>> AVAILABLE_MODS = new Dictionary<int, Tuple<string, int?>>
         {
             { 0, Tuple.Create<string, int?>("NF", null) },
             { 1, Tuple.Create<string, int?>("EZ", null) },
@@ -126,11 +117,11 @@ namespace ElasticIndex
             var mods = new Dictionary<int, string>();
             var impliedIds = new List<int>();
 
-            foreach (var key in AvailableMods.Keys)
+            foreach (var key in AVAILABLE_MODS.Keys)
             {
                 if ((bitset & (1 << key)) == 0) continue;
 
-                var tuple = AvailableMods[key];
+                var tuple = AVAILABLE_MODS[key];
                 if (tuple.Item2.HasValue) impliedIds.Add(tuple.Item2.Value);
 
                 mods[key] = tuple.Item1;

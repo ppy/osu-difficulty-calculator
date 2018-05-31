@@ -16,12 +16,12 @@ namespace ElasticIndex
 {
     public class HighScoreIndexer<T> where T : Model
     {
-        public readonly ElasticClient ElasticClient;
+        private readonly ElasticClient elasticClient;
         public string Suffix { get; set; }
 
         private readonly IDbConnection dbConnection;
 
-        private int chunkSize = 10000;
+        private readonly int chunkSize = 10000;
         private long? resumeFrom;
 
         public HighScoreIndexer()
@@ -33,7 +33,7 @@ namespace ElasticIndex
                 chunkSize = int.Parse(Program.Configuration["chunk_size"]);
 
             dbConnection = new MySqlConnection(Program.Configuration.GetConnectionString("osu"));
-            ElasticClient = new ElasticClient
+            elasticClient = new ElasticClient
             (
                 new ConnectionSettings(new Uri(Program.Configuration["elasticsearch:host"]))
             );
@@ -44,13 +44,13 @@ namespace ElasticIndex
         /// </summary>
         /// <param name="name">Name of the alias to find the matching index for.</param>
         /// <returns>Name of index found or created.</returns>
-        private string FindOrCreateIndex(string name)
+        private string findOrCreateIndex(string name)
         {
             Console.WriteLine();
             Console.WriteLine();
             Console.WriteLine($"Find or create index for `{name}`...");
-            var metas = IndexMeta.GetByAlias(name);
-            var indices = ElasticClient.GetIndicesPointingToAlias(name);
+            var metas = IndexMeta.GetByAlias(name).ToList();
+            var indices = elasticClient.GetIndicesPointingToAlias(name);
 
             string index = metas.FirstOrDefault(m => indices.Contains(m.Index))?.Index;
             // 3 cases are handled:
@@ -76,8 +76,8 @@ namespace ElasticIndex
             Console.WriteLine($"Creating `{index}` for `{name}`.");
             // create by supplying the json file instead of the attributed class because we're not
             // mapping every field but still want everything for _source.
-            var json = File.ReadAllText(Path.GetFullPath($"schemas/high_scores.json"));
-            ElasticClient.LowLevel.IndicesCreate<DynamicResponse>(index, json);
+            var json = File.ReadAllText(Path.GetFullPath("schemas/high_scores.json"));
+            elasticClient.LowLevel.IndicesCreate<DynamicResponse>(index, json);
 
             return index;
 
@@ -88,7 +88,7 @@ namespace ElasticIndex
         {
             var pendingTasks = new ConcurrentBag<Task>();
 
-            string index = FindOrCreateIndex(name);
+            string index = findOrCreateIndex(name);
 
             // find out if we should be resuming
             if (resumeFrom == null)
@@ -112,14 +112,14 @@ namespace ElasticIndex
                 foreach (var chunk in chunks)
                 {
                     var bulkDescriptor = new BulkDescriptor().Index(index);
-                    bulkDescriptor.IndexMany<T>(chunk);
+                    bulkDescriptor.IndexMany(chunk);
 
-                    Task task = ElasticClient.BulkAsync(bulkDescriptor);
+                    Task task = elasticClient.BulkAsync(bulkDescriptor);
                     pendingTasks.Add(task);
                     task.ContinueWith(t => pendingTasks.TryTake(out task));
 
                     // I feel like this is in the wrong place...
-                    IndexMeta.Update(new IndexMeta()
+                    IndexMeta.Update(new IndexMeta
                     {
                         Index = index,
                         Alias = name,
@@ -135,7 +135,7 @@ namespace ElasticIndex
             Console.WriteLine($"{count} records took {span}");
             if (count > 0) Console.WriteLine($"{count / span.TotalSeconds} records/s");
 
-            UpdateAlias(name, index);
+            updateAlias(name, index);
 
             // wait for all tasks to complete before exiting.
             Console.WriteLine("Waiting for all tasks to complete...");
@@ -143,19 +143,19 @@ namespace ElasticIndex
             Console.WriteLine("All tasks completed.");
         }
 
-        private void UpdateAlias(string alias, string index)
+        private void updateAlias(string alias, string index)
         {
             Console.WriteLine($"Updating `{alias}` alias to `{index}`...");
 
             var aliasDescriptor = new BulkAliasDescriptor();
-            var oldIndices = ElasticClient.GetIndicesPointingToAlias(alias);
+            var oldIndices = elasticClient.GetIndicesPointingToAlias(alias);
 
             foreach (var oldIndex in oldIndices)
                 aliasDescriptor.Remove(d => d.Alias(alias).Index(oldIndex));
 
             aliasDescriptor.Add(d => d.Alias(alias).Index(index));
 
-            Console.WriteLine(ElasticClient.Alias(aliasDescriptor));
+            Console.WriteLine(elasticClient.Alias(aliasDescriptor));
 
             // TODO: cleanup unaliased indices.
         }
