@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Elasticsearch.Net;
-using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
 using Nest;
 
@@ -20,19 +19,15 @@ namespace ElasticIndex
         public long? ResumeFrom { get; set; }
         public string Suffix { get; set; }
 
-        private readonly int chunkSize = 10000;
         private readonly IDbConnection dbConnection;
         private readonly ElasticClient elasticClient;
 
         public HighScoreIndexer()
         {
-            if (!string.IsNullOrEmpty(Program.Configuration["chunk_size"]))
-                chunkSize = int.Parse(Program.Configuration["chunk_size"]);
-
-            dbConnection = new MySqlConnection(Program.Configuration.GetConnectionString("osu"));
+            dbConnection = new MySqlConnection(AppSettings.ConnectionString);
             elasticClient = new ElasticClient
             (
-                new ConnectionSettings(new Uri(Program.Configuration["elasticsearch:host"]))
+                new ConnectionSettings(new Uri(AppSettings.ElasticsearchHost))
             );
         }
 
@@ -46,7 +41,7 @@ namespace ElasticIndex
             var resumeFrom = ResumeFrom ?? IndexMeta.GetByName(index)?.LastId;
 
             Console.WriteLine();
-            Console.WriteLine($"{typeof(T)}, index `{index}`, chunkSize `{chunkSize}`, resume `{resumeFrom}`");
+            Console.WriteLine($"{typeof(T)}, index `{index}`, chunkSize `{AppSettings.ChunkSize}`, resume `{resumeFrom}`");
             Console.WriteLine();
 
             var start = DateTime.Now;
@@ -56,7 +51,7 @@ namespace ElasticIndex
             {
                 dbConnection.Open();
                 // TODO: retry needs to be added on timeout
-                var chunks = Model.Chunk<T>(dbConnection, chunkSize, resumeFrom);
+                var chunks = Model.Chunk<T>(dbConnection, AppSettings.ChunkSize, resumeFrom);
                 foreach (var chunk in chunks)
                 {
                     var bulkDescriptor = new BulkDescriptor().Index(index);

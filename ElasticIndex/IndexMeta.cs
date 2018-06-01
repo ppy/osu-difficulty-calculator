@@ -13,8 +13,8 @@ namespace ElasticIndex
     {
         private static readonly ElasticClient client = new ElasticClient(
             new ConnectionSettings(
-                new Uri(Program.Configuration["elasticsearch:host"])
-            ).DefaultIndex($"{Program.Configuration["elasticsearch:prefix"]}_index_meta")
+                new Uri(AppSettings.ElasticsearchHost)
+            ).DefaultIndex($"{AppSettings.ElasticsearchPrefix}_index_meta")
         );
 
 
