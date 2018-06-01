@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Reflection;
 using Dapper;
 using Dapper.Contrib.Extensions;
 
@@ -23,8 +24,8 @@ namespace ElasticIndex
             long? lastId = resumeFrom ?? 0;
             Console.WriteLine($"Starting from {lastId}...");
 
-            var cursorColumn = (typeof(T).GetCustomAttributes(typeof(CursorColumnAttribute), true).First() as CursorColumnAttribute).Name;
-            var table = (typeof(T).GetCustomAttributes(typeof(TableAttribute), true).First() as TableAttribute).Name;
+            var cursorColumn = typeof(T).GetCustomAttributes<CursorColumnAttribute>().First().Name;
+            var table = typeof(T).GetCustomAttributes<TableAttribute>().First().Name;
 
             while (lastId != null)
             {
