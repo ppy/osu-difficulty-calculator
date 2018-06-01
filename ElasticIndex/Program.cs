@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 
@@ -20,14 +21,31 @@ namespace ElasticIndex
 
         public void Run()
         {
-            var prefix = Configuration["elasticsearch:prefix"];
-            var modesStr = Configuration["modes"] ?? string.Empty;
-            var modes = modesStr.Split(',', StringSplitOptions.RemoveEmptyEntries);
-            var suffix = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+            bool isWatching = new [] { "1", "true" }.Contains((Configuration["watch"] ?? string.Empty).ToLowerInvariant());
+            if (isWatching) Console.WriteLine("Running in watch mode.");
 
             long? resumeFrom = null;
             if (!string.IsNullOrEmpty(Configuration["resume_from"]))
                 resumeFrom = long.Parse(Configuration["resume_from"]);
+
+            bool ranOnce = false;
+
+            while (!ranOnce || isWatching)
+            {
+                // When running in watch mode, the indexer should be told to resume from the
+                // last known saved point instead of the configured value.
+                RunLoop(ranOnce ? null : resumeFrom);
+                ranOnce = true;
+                if (isWatching) Thread.Sleep(10000);
+            }
+        }
+
+        public void RunLoop(long? resumeFrom)
+        {
+            var prefix = Configuration["elasticsearch:prefix"];
+            var modesStr = Configuration["modes"] ?? string.Empty;
+            var modes = modesStr.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            var suffix = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
 
             foreach (var mode in modes.Intersect(VALID_MODES))
             {
