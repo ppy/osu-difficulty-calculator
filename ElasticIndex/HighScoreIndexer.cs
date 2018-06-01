@@ -17,19 +17,15 @@ namespace ElasticIndex
     public class HighScoreIndexer<T> where T : Model
     {
         public string Name { get; set; }
+        public long? ResumeFrom { get; set; }
         public string Suffix { get; set; }
 
         private readonly int chunkSize = 10000;
         private readonly IDbConnection dbConnection;
         private readonly ElasticClient elasticClient;
-        private long? resumeFrom;
-
 
         public HighScoreIndexer()
         {
-            if (!string.IsNullOrEmpty(Program.Configuration["resume_from"]))
-                resumeFrom = long.Parse(Program.Configuration["resume_from"]);
-
             if (!string.IsNullOrEmpty(Program.Configuration["chunk_size"]))
                 chunkSize = int.Parse(Program.Configuration["chunk_size"]);
 
@@ -47,11 +43,7 @@ namespace ElasticIndex
             string index = findOrCreateIndex(Name);
 
             // find out if we should be resuming
-            if (resumeFrom == null)
-            {
-                var metadata = IndexMeta.GetByName(index);
-                resumeFrom = metadata?.LastId;
-            }
+            var resumeFrom = ResumeFrom ?? IndexMeta.GetByName(index)?.LastId;
 
             Console.WriteLine();
             Console.WriteLine($"{typeof(T)}, index `{index}`, chunkSize `{chunkSize}`, resume `{resumeFrom}`");

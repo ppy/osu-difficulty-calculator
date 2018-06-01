@@ -25,6 +25,10 @@ namespace ElasticIndex
             var modes = modesStr.Split(',', StringSplitOptions.RemoveEmptyEntries);
             var suffix = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
 
+            long? resumeFrom = null;
+            if (!string.IsNullOrEmpty(Configuration["resume_from"]))
+                resumeFrom = long.Parse(Configuration["resume_from"]);
+
             foreach (var mode in modes.Intersect(VALID_MODES))
             {
                 var indexName = $"{prefix}high_scores_{mode}";
@@ -37,6 +41,7 @@ namespace ElasticIndex
                 dynamic indexer = Activator.CreateInstance(indexerType);
                 indexer.Suffix = suffix;
                 indexer.Name = indexName;
+                indexer.ResumeFrom = resumeFrom;
                 indexer.Run();
             }
         }
