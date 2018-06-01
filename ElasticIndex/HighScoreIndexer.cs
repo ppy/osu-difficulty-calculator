@@ -16,13 +16,14 @@ namespace ElasticIndex
 {
     public class HighScoreIndexer<T> where T : Model
     {
-        private readonly ElasticClient elasticClient;
+        public string Name { get; set; }
         public string Suffix { get; set; }
 
-        private readonly IDbConnection dbConnection;
-
         private readonly int chunkSize = 10000;
+        private readonly IDbConnection dbConnection;
+        private readonly ElasticClient elasticClient;
         private long? resumeFrom;
+
 
         public HighScoreIndexer()
         {
@@ -39,11 +40,11 @@ namespace ElasticIndex
             );
         }
 
-        public void Run(string name)
+        public void Run()
         {
             var pendingTasks = new ConcurrentBag<Task>();
 
-            string index = findOrCreateIndex(name);
+            string index = findOrCreateIndex(Name);
 
             // find out if we should be resuming
             if (resumeFrom == null)
@@ -77,7 +78,7 @@ namespace ElasticIndex
                     IndexMeta.Update(new IndexMeta
                     {
                         Index = index,
-                        Alias = name,
+                        Alias = Name,
                         LastId = chunk.Last().CursorValue,
                         UpdatedAt = DateTimeOffset.UtcNow
                     });
@@ -90,7 +91,7 @@ namespace ElasticIndex
             Console.WriteLine($"{count} records took {span}");
             if (count > 0) Console.WriteLine($"{count / span.TotalSeconds} records/s");
 
-            updateAlias(name, index);
+            updateAlias(Name, index);
 
             // wait for all tasks to complete before exiting.
             Console.WriteLine("Waiting for all tasks to complete...");

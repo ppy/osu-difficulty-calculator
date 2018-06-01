@@ -36,7 +36,8 @@ namespace ElasticIndex
 
                 dynamic indexer = Activator.CreateInstance(indexerType);
                 indexer.Suffix = suffix;
-                indexer.Run(indexName);
+                indexer.Name = indexName;
+                indexer.Run();
             }
         }
 
