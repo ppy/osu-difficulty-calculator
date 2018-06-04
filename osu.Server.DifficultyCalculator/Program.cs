@@ -20,17 +20,13 @@ namespace osu.Server.DifficultyCalculator
         public static void Main(string[] args)
             => CommandLineApplication.Execute<Program>(args);
 
-        // Todo: Move to configuration
-        private const string connection_string = "Server=localhost;Database=osu;User ID=root;SslMode=None;Pooling=true; Min pool size = 50; Max pool size = 200; Charset=utf8;";
-        private const string beatmaps_path = "osu";
-
         private readonly Dictionary<string, int> attributeIds = new Dictionary<string, int>();
 
         private Database database;
 
         public void OnExecute(CommandLineApplication app, IConsole console)
         {
-            database = new Database(connection_string);
+            database = new Database(AppSettings.ConnectionString);
 
             using (var reader = database.RunQuery("SELECT attrib_id, name FROM osu_difficulty_attribs"))
             {
@@ -49,7 +45,7 @@ namespace osu.Server.DifficultyCalculator
 
         private async Task processBeatmap(int beatmapId)
         {
-            string path = Path.Combine(beatmaps_path, beatmapId + ".osu");
+            string path = Path.Combine(AppSettings.BeatmapsPath, beatmapId + ".osu");
             if (!File.Exists(path))
                 return;
 
