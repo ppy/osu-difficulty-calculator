@@ -28,7 +28,6 @@ namespace osu.Server.DifficultyCalculator
 
         private Database database;
 
-
         public void OnExecute(CommandLineApplication app, IConsole console)
         {
             database = new Database(connection_string);
@@ -41,15 +40,9 @@ namespace osu.Server.DifficultyCalculator
 
             var tasks = new List<Task>();
 
-            using (var reader = database.RunQuery("SELECT osu_beatmaps.beatmap_id, checksum FROM osu_beatmaps ORDER BY beatmap_id ASC"))
-            {
+            using (var reader = database.RunQuery("SELECT beatmap_id, checksum FROM osu_beatmaps ORDER BY beatmap_id ASC"))
                 while (reader.Read())
-                {
-                    int id = reader.GetInt32(0);
-                    string hash = reader.IsDBNull(1) ? string.Empty : reader.GetString(1);
-                    tasks.Add(processBeatmap(id));
-                }
-            }
+                    tasks.Add(processBeatmap(reader.GetInt32(0)));
 
             Task.WaitAll(tasks.ToArray());
         }
