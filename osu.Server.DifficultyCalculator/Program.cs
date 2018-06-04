@@ -93,15 +93,15 @@ namespace osu.Server.DifficultyCalculator
             var playable = localBeatmap.GetPlayableBeatmap(localBeatmap.BeatmapInfo.Ruleset);
             var ruleset = localBeatmap.BeatmapInfo.Ruleset.CreateInstance();
 
-            foreach (var mod in ruleset.GetModsFor(ModType.DifficultyCalculation))
+            using (var conn = database.GetConnection())
             {
-                var legacyMod = toLegacyMod(mod);
-
-                var attributes = new Dictionary<string, object>();
-                double starRating = ruleset.CreateDifficultyCalculator(playable, toModArray(mod)).Calculate(attributes);
-
-                using (var conn = database.GetConnection())
+                foreach (var mod in ruleset.GetModsFor(ModType.DifficultyCalculation))
                 {
+                    var legacyMod = toLegacyMod(mod);
+
+                    var attributes = new Dictionary<string, object>();
+                    double starRating = ruleset.CreateDifficultyCalculator(playable, toModArray(mod)).Calculate(attributes);
+
                     conn.Execute(
                         "INSERT INTO osu_beatmap_difficulty (beatmap_id, mode, mods, diff_unified) "
                         + "VALUES (@BeatmapId, @Mode, @Mods, @Diff) "
@@ -113,39 +113,33 @@ namespace osu.Server.DifficultyCalculator
                             Mods = (int)legacyMod,
                             Diff = starRating
                         });
-                }
 
-                if (attributes.Count > 0)
-                {
-                    var parameters = new List<object>();
-                    foreach (var kvp in attributes)
+                    if (attributes.Count > 0)
                     {
-                        if (!attributeIds.ContainsKey(kvp.Key))
-                            continue;
-
-                        parameters.Add(new
+                        var parameters = new List<object>();
+                        foreach (var kvp in attributes)
                         {
-                            BeatmapId = beatmapId,
-                            Mode = ruleset.RulesetInfo.ID,
-                            Mods = (int)legacyMod,
-                            Attribute = attributeIds[kvp.Key],
-                            Value = Convert.ToSingle(kvp.Value)
-                        });
-                    }
+                            if (!attributeIds.ContainsKey(kvp.Key))
+                                continue;
 
-                    using (var conn = database.GetConnection())
-                    {
+                            parameters.Add(new
+                            {
+                                BeatmapId = beatmapId,
+                                Mode = ruleset.RulesetInfo.ID,
+                                Mods = (int)legacyMod,
+                                Attribute = attributeIds[kvp.Key],
+                                Value = Convert.ToSingle(kvp.Value)
+                            });
+                        }
+
                         conn.Execute(
                             "INSERT INTO osu_beatmap_difficulty_attribs (beatmap_id, mode, mods, attrib_id, value) "
                             + "VALUES (@BeatmapId, @Mode, @Mods, @Attribute, @Value) "
                             + "ON DUPLICATE KEY UPDATE value = VALUES(value)",
                             parameters.ToArray());
                     }
-                }
 
-                if (legacyMod == LegacyMods.None && ruleset.RulesetInfo.Equals(localBeatmap.BeatmapInfo.Ruleset))
-                {
-                    using (var conn = database.GetConnection())
+                    if (legacyMod == LegacyMods.None && ruleset.RulesetInfo.Equals(localBeatmap.BeatmapInfo.Ruleset))
                     {
                         conn.Execute(
                             "UPDATE osu_beatmaps SET difficultyrating=@Diff, diff_approach=@AR, diff_overall=@OD, diff_drain=@HP, diff_size=@CS "
