@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
 using McMaster.Extensions.CommandLineUtils;
-using MySql.Data.MySqlClient;
 using osu.Game.Beatmaps.Legacy;
 using osu.Game.Rulesets.Mania.Mods;
 using osu.Game.Rulesets.Mods;
@@ -28,17 +28,19 @@ namespace osu.Server.DifficultyCalculator
         {
             database = new Database(AppSettings.ConnectionString);
 
-            using (var reader = database.RunQuery("SELECT attrib_id, name FROM osu_difficulty_attribs"))
+            using (var conn = database.GetConnection())
             {
-                while (reader.Read())
-                    attributeIds[reader.GetString(1)] = reader.GetInt32(0);
+                foreach ((int Id, string Name) attrib in conn.Query<(int, string)>("SELECT attrib_id, name FROM osu_difficulty_attribs"))
+                    attributeIds[attrib.Name] = attrib.Id;
             }
 
             var tasks = new List<Task>();
 
-            using (var reader = database.RunQuery("SELECT beatmap_id, checksum FROM osu_beatmaps ORDER BY beatmap_id ASC"))
-                while (reader.Read())
-                    tasks.Add(processBeatmap(reader.GetInt32(0)));
+            using (var conn = database.GetConnection())
+            {
+                foreach (int id in conn.Query<int>("SELECT beatmap_id FROM osu_beatmaps ORDER BY beatmap_id ASC"))
+                    tasks.Add(processBeatmap(id));
+            }
 
             Task.WaitAll(tasks.ToArray());
         }
@@ -66,52 +68,66 @@ namespace osu.Server.DifficultyCalculator
                         var attributes = new Dictionary<string, object>();
                         double starRating = ruleset.CreateDifficultyCalculator(playable, toModArray(mod)).Calculate(attributes);
 
-                        database.RunNonQuery(
-                            "INSERT INTO osu_beatmap_difficulty (beatmap_id, mode, mods, diff_unified) VALUES (@beatmap_id, @mode, @mods, @diff_unified) ON DUPLICATE KEY UPDATE diff_unified = @diff_unified",
-                            new MySqlParameter("@beatmap_id", beatmapId),
-                            new MySqlParameter("@mode", ruleset.RulesetInfo.ID),
-                            new MySqlParameter("@mods", (int)legacyMod),
-                            new MySqlParameter("@diff_unified", starRating));
+                        using (var conn = database.GetConnection())
+                        {
+                            conn.Execute(
+                                "INSERT INTO osu_beatmap_difficulty (beatmap_id, mode, mods, diff_unified) "
+                                + "VALUES (@BeatmapId, @Mode, @Mods, @Diff) "
+                                + "ON DUPLICATE KEY UPDATE diff_unified = @Diff",
+                                new
+                                {
+                                    BeatmapId = beatmapId,
+                                    Mode = ruleset.RulesetInfo.ID,
+                                    Mods = (int)legacyMod,
+                                    Diff = starRating
+                                });
+                        }
 
                         if (attributes.Count > 0)
                         {
-                            string command = "INSERT INTO osu_beatmap_difficulty_attribs (beatmap_id, mode, mods, attrib_id, value) VALUES ";
-
-                            var parameters = new List<MySqlParameter>
-                            {
-                                new MySqlParameter("@beatmap_id", beatmapId),
-                                new MySqlParameter("@mode", ruleset.RulesetInfo.ID),
-                                new MySqlParameter("@mods", (int)legacyMod)
-                            };
-
-                            int i = 0;
+                            var parameters = new List<object>();
                             foreach (var kvp in attributes)
                             {
                                 if (!attributeIds.ContainsKey(kvp.Key))
                                     continue;
 
-                                command += $"(@beatmap_id, @mode, @mods, @attrib_id{i}, @value{i}),";
-                                parameters.Add(new MySqlParameter($"@attrib_id{i}", attributeIds[kvp.Key]));
-                                parameters.Add(new MySqlParameter($"@value{i}", Convert.ToSingle(kvp.Value)));
-
-                                i++;
+                                parameters.Add(new
+                                {
+                                    BeatmapId = beatmapId,
+                                    Mode = ruleset.RulesetInfo.ID,
+                                    Mods = (int)legacyMod,
+                                    Attribute = attributeIds[kvp.Key],
+                                    Value = Convert.ToSingle(kvp.Value)
+                                });
                             }
 
-                            command = command.TrimEnd(',') + " ON DUPLICATE KEY UPDATE value = VALUES(value)";
-                            database.RunNonQuery(command, parameters.ToArray());
+                            using (var conn = database.GetConnection())
+                            {
+                                conn.Execute(
+                                    "INSERT INTO osu_beatmap_difficulty_attribs (beatmap_id, mode, mods, attrib_id, value) "
+                                    + "VALUES (@BeatmapId, @Mode, @Mods, @Attribute, @Value) "
+                                    + "ON DUPLICATE KEY UPDATE value = VALUES(value)",
+                                    parameters.ToArray());
+                            }
                         }
 
                         if (legacyMod == LegacyMods.None && ruleset.RulesetInfo.Equals(localBeatmap.BeatmapInfo.Ruleset))
                         {
-                            database.RunNonQuery(
-                                "UPDATE osu_beatmaps SET difficultyrating=@difficultyrating, diff_approach=@diff_approach, diff_overall=@diff_overall, diff_drain=@diff_drain, diff_size=@diff_size WHERE beatmap_id=@beatmap_id",
-                                new MySqlParameter("@difficultyrating", starRating),
-                                new MySqlParameter("@beatmap_id", beatmapId),
-                                new MySqlParameter("@diff_approach", localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.ApproachRate),
-                                new MySqlParameter("@diff_overall", localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty),
-                                new MySqlParameter("@diff_drain", localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.DrainRate),
-                                new MySqlParameter("@diff_size", localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize)
-                            );
+                            using (var conn = database.GetConnection())
+                            {
+                                conn.Execute(
+                                    "UPDATE osu_beatmaps SET difficultyrating=@Diff, diff_approach=@ApproachRate, diff_overall=@OverallDifficulty, diff_drain=@DrainRate, diff_size=@CircleSize "
+                                    + "WHERE beatmap_id=@BeatmapId",
+                                    new
+                                    {
+                                        BeatmapId = beatmapId,
+                                        Diff = starRating,
+                                        ApproachRate = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.ApproachRate,
+                                        OverallDifficulty = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty,
+                                        DrainRate = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.DrainRate,
+                                        CircleSize = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize
+                                    });
+                            }
                         }
                     });
                 }
