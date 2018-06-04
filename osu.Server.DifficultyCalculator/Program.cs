@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
 using McMaster.Extensions.CommandLineUtils;
@@ -24,21 +25,23 @@ namespace osu.Server.DifficultyCalculator
 
         private Database database;
 
+        private int totalBeatmaps;
+        private int processedBeatmaps;
+
         public void OnExecute(CommandLineApplication app, IConsole console)
         {
             database = new Database(AppSettings.ConnectionString);
-
-            using (var conn = database.GetConnection())
-            {
-                foreach ((int Id, string Name) attrib in conn.Query<(int, string)>("SELECT attrib_id, name FROM osu_difficulty_attribs"))
-                    attributeIds[attrib.Name] = attrib.Id;
-            }
 
             var tasks = new List<Task>();
 
             using (var conn = database.GetConnection())
             {
-                foreach (int id in conn.Query<int>("SELECT beatmap_id FROM osu_beatmaps ORDER BY beatmap_id ASC"))
+                foreach ((int Id, string Name) attrib in conn.Query<(int, string)>("SELECT attrib_id, name FROM osu_difficulty_attribs"))
+                    attributeIds[attrib.Name] = attrib.Id;
+
+                totalBeatmaps = conn.ExecuteScalar<int>("SELECT COUNT(*) FROM osu_beatmaps");
+
+                foreach (int id in conn.Query<int>("SELECT beatmap_id FROM osu_beatmaps ORDER BY beatmap_id DESC"))
                     tasks.Add(processBeatmap(id));
             }
 
@@ -49,7 +52,10 @@ namespace osu.Server.DifficultyCalculator
         {
             string path = Path.Combine(AppSettings.BeatmapsPath, beatmapId + ".osu");
             if (!File.Exists(path))
+            {
+                finish($"Beatmap {beatmapId} skipped (beatmap file not found).");
                 return;
+            }
 
             await Task.Run(async () =>
             {
@@ -131,7 +137,15 @@ namespace osu.Server.DifficultyCalculator
                         }
                     });
                 }
+
+                finish($"Difficulty updated for beatmap {beatmapId}.");
             });
+        }
+
+        private void finish(string message)
+        {
+            Interlocked.Increment(ref processedBeatmaps);
+            Console.WriteLine($"{processedBeatmaps} / {totalBeatmaps} : {message}");
         }
 
         private Mod[] toModArray(Mod mod)
