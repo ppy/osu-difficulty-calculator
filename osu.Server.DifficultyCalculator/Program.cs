@@ -21,6 +21,9 @@ namespace osu.Server.DifficultyCalculator
         public static void Main(string[] args)
             => CommandLineApplication.Execute<Program>(args);
 
+        [Option]
+        public bool Multi { get; set; }
+
         private readonly Dictionary<string, int> attributeIds = new Dictionary<string, int>();
 
         private Database database;
@@ -42,7 +45,21 @@ namespace osu.Server.DifficultyCalculator
                 totalBeatmaps = conn.ExecuteScalar<int>("SELECT COUNT(*) FROM osu_beatmaps");
 
                 foreach (int id in conn.Query<int>("SELECT beatmap_id FROM osu_beatmaps ORDER BY beatmap_id DESC"))
-                    tasks.Add(processBeatmap(id));
+                {
+                    if (Multi)
+                        tasks.Add(processBeatmap(id));
+                    else
+                    {
+                        try
+                        {
+                            processBeatmap(id).Wait();
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e);
+                        }
+                    }
+                }
             }
 
             Task.WaitAll(tasks.ToArray());
