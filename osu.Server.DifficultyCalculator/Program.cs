@@ -2,6 +2,7 @@
 // Licensed under the MIT Licence - https://raw.githubusercontent.com/ppy/osu-server/master/LICENCE
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -22,17 +23,25 @@ namespace osu.Server.DifficultyCalculator
             => CommandLineApplication.Execute<Program>(args);
 
         [Option]
-        public bool Multi { get; set; }
+        public int Concurrency { get; set; } = 1;
 
         private readonly Dictionary<string, int> attributeIds = new Dictionary<string, int>();
 
         private Database database;
+
+        private readonly ConcurrentQueue<int> beatmaps = new ConcurrentQueue<int>();
 
         private int totalBeatmaps;
         private int processedBeatmaps;
 
         public void OnExecute(CommandLineApplication app, IConsole console)
         {
+            if (Concurrency < 1)
+            {
+                console.Error.WriteLine("Concurrency level must be above 1.");
+                return;
+            }
+
             database = new Database(AppSettings.ConnectionString);
 
             var tasks = new List<Task>();
@@ -45,27 +54,31 @@ namespace osu.Server.DifficultyCalculator
                 totalBeatmaps = conn.ExecuteScalar<int>("SELECT COUNT(*) FROM osu_beatmaps");
 
                 foreach (int id in conn.Query<int>("SELECT beatmap_id FROM osu_beatmaps ORDER BY beatmap_id DESC"))
-                {
-                    if (Multi)
-                        tasks.Add(processBeatmap(id));
-                    else
-                    {
-                        try
-                        {
-                            processBeatmap(id).Wait();
-                        }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine(e);
-                        }
-                    }
-                }
+                    beatmaps.Enqueue(id);
             }
+
+            for (int i = 0; i < Concurrency; i++)
+                tasks.Add(processBeatmaps());
 
             Task.WaitAll(tasks.ToArray());
         }
 
-        private Task processBeatmap(int beatmapId) => Task.Run(() =>
+        private Task processBeatmaps() => Task.Factory.StartNew(() =>
+        {
+            while (beatmaps.TryDequeue(out int toProcess))
+            {
+                try
+                {
+                    processBeatmap(toProcess);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
+            }
+        }, TaskCreationOptions.LongRunning);
+
+        private void processBeatmap(int beatmapId)
         {
             string path = Path.Combine(AppSettings.BeatmapsPath, beatmapId + ".osu");
             if (!File.Exists(path))
@@ -151,7 +164,7 @@ namespace osu.Server.DifficultyCalculator
             }
 
             finish($"Difficulty updated for beatmap {beatmapId}.");
-        });
+        }
 
         private void finish(string message)
         {
