@@ -116,16 +116,16 @@ namespace osu.Server.DifficultyCalculator
                             using (var conn = database.GetConnection())
                             {
                                 conn.Execute(
-                                    "UPDATE osu_beatmaps SET difficultyrating=@Diff, diff_approach=@ApproachRate, diff_overall=@OverallDifficulty, diff_drain=@DrainRate, diff_size=@CircleSize "
+                                    "UPDATE osu_beatmaps SET difficultyrating=@Diff, diff_approach=@AR, diff_overall=@OD, diff_drain=@HP, diff_size=@CS "
                                     + "WHERE beatmap_id=@BeatmapId",
                                     new
                                     {
                                         BeatmapId = beatmapId,
                                         Diff = starRating,
-                                        ApproachRate = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.ApproachRate,
-                                        OverallDifficulty = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty,
-                                        DrainRate = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.DrainRate,
-                                        CircleSize = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize
+                                        AR = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.ApproachRate,
+                                        OD = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty,
+                                        HP = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.DrainRate,
+                                        CS = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize
                                     });
                             }
                         }
