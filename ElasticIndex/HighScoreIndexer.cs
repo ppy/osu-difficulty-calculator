@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Elasticsearch.Net;
 using MySql.Data.MySqlClient;
@@ -19,6 +21,10 @@ namespace ElasticIndex
         public long? ResumeFrom { get; set; }
         public string Suffix { get; set; }
 
+        // producer-consumer queue.
+        private BlockingCollection<List<T>> queue = new BlockingCollection<List<T>>(2);
+        private ConcurrentBag<Task<IBulkResponse>> pendingTasks = new ConcurrentBag<Task<IBulkResponse>>();
+
         private readonly IDbConnection dbConnection;
         private readonly ElasticClient elasticClient;
 
@@ -31,11 +37,54 @@ namespace ElasticIndex
             );
         }
 
+        private Task consumerLoop(string index)
+        {
+            return Task.Run(() =>
+            {
+                while (!queue.IsCompleted)
+                {
+                    List<T> chunk = null;
+
+                    try
+                    {
+                        chunk = queue.Take();
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        // queue was marked as completed while blocked.
+                        Console.WriteLine(ex.Message);
+                        continue;
+                    }
+
+                    var bulkDescriptor = new BulkDescriptor().Index(index);
+                    bulkDescriptor.IndexMany(chunk);
+
+                    Task<IBulkResponse> task = elasticClient.BulkAsync(bulkDescriptor);
+                    pendingTasks.Add(task);
+                    task.ContinueWith(t =>
+                    {
+                        // wait until after any requeueing needs to be done before removing the task.
+                        handleResult(task.Result, chunk);
+                        pendingTasks.TryTake(out task);
+                    });
+
+                    // TODO: Less blind-fire update.
+                    // I feel like this is in the wrong place...
+                    IndexMeta.Update(new IndexMeta
+                    {
+                        Index = index,
+                        Alias = Name,
+                        LastId = chunk.Last().CursorValue,
+                        UpdatedAt = DateTimeOffset.UtcNow
+                    });
+                }
+            });
+        }
+
         public void Run()
         {
-            var pendingTasks = new ConcurrentBag<Task>();
-
             string index = findOrCreateIndex(Name);
+            var consumerTask = consumerLoop(index);
 
             // find out if we should be resuming
             var resumeFrom = ResumeFrom ?? IndexMeta.GetByName(index)?.LastId;
@@ -54,24 +103,18 @@ namespace ElasticIndex
                 var chunks = Model.Chunk<T>(dbConnection, AppSettings.ChunkSize, resumeFrom);
                 foreach (var chunk in chunks)
                 {
-                    var bulkDescriptor = new BulkDescriptor().Index(index);
-                    bulkDescriptor.IndexMany(chunk);
-
-                    Task task = elasticClient.BulkAsync(bulkDescriptor);
-                    pendingTasks.Add(task);
-                    task.ContinueWith(t => pendingTasks.TryTake(out task));
-
-                    // I feel like this is in the wrong place...
-                    IndexMeta.Update(new IndexMeta
-                    {
-                        Index = index,
-                        Alias = Name,
-                        LastId = chunk.Last().CursorValue,
-                        UpdatedAt = DateTimeOffset.UtcNow
-                    });
-
+                    queue.Add(chunk);
                     count += chunk.Count;
                 }
+            }
+
+            // Spin until queue and pendingTasks are empty.
+            while (queue.Count > 0 || pendingTasks.Count > 0)
+            {
+                var sleepDuration = Math.Min(10000, (queue.Count + pendingTasks.Count) * 100);
+                Console.WriteLine($"Waiting for queue to empty... ({queue.Count}) ({pendingTasks.Count}) sleeping for {sleepDuration} ms");
+                Thread.Sleep(sleepDuration);
+                Task.WaitAll(pendingTasks.ToArray());
             }
 
             var span = DateTime.Now - start;
@@ -80,10 +123,10 @@ namespace ElasticIndex
 
             updateAlias(Name, index);
 
-            // wait for all tasks to complete before exiting.
-            Console.WriteLine("Waiting for all tasks to complete...");
-            Task.WaitAll(pendingTasks.ToArray());
-            Console.WriteLine("All tasks completed.");
+            queue.CompleteAdding();
+            Console.WriteLine("Mark queue as completed.");
+
+            consumerTask.Wait();
         }
 
         /// <summary>
@@ -129,6 +172,13 @@ namespace ElasticIndex
             return index;
 
             // TODO: cases not covered should throw an Exception (aliased but not tracked, etc).
+        }
+
+        private void handleResult(IBulkResponse response, List<T> chunk)
+        {
+            if (response.ItemsWithErrors.All(item => item.Status != 429)) return;
+            queue.Add(chunk);
+            Console.WriteLine($"Server returned 429, requeued chunk with lastId {chunk.Last().CursorValue}");
         }
 
         private void updateAlias(string alias, string index)
