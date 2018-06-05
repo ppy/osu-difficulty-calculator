@@ -21,12 +21,16 @@ namespace ElasticIndex
         public long? ResumeFrom { get; set; }
         public string Suffix { get; set; }
 
-        // producer-consumer queue.
-        private BlockingCollection<List<T>> queue = new BlockingCollection<List<T>>(2);
-        private ConcurrentBag<Task<IBulkResponse>> pendingTasks = new ConcurrentBag<Task<IBulkResponse>>();
-
         private readonly IDbConnection dbConnection;
         private readonly ElasticClient elasticClient;
+
+        private readonly ConcurrentBag<Task<IBulkResponse>> pendingTasks = new ConcurrentBag<Task<IBulkResponse>>();
+        private readonly BlockingCollection<List<T>> queue = new BlockingCollection<List<T>>(5);
+
+        private int waitingCount => pendingTasks.Count + queue.Count;
+
+        // throttle control
+        private int delay = 0;
 
         public HighScoreIndexer()
         {
@@ -37,13 +41,60 @@ namespace ElasticIndex
             );
         }
 
+        public void Run()
+        {
+            var index = findOrCreateIndex(Name);
+            var consumerTask = consumerLoop(index);
+
+            // find out if we should be resuming
+            var resumeFrom = ResumeFrom ?? IndexMeta.GetByName(index)?.LastId;
+
+            Console.WriteLine();
+            Console.WriteLine($"{typeof(T)}, index `{index}`, chunkSize `{AppSettings.ChunkSize}`, resume `{resumeFrom}`");
+            Console.WriteLine();
+
+            var start = DateTime.Now;
+            var producerTask = producerLoop(resumeFrom);
+
+            producerTask.Wait();
+            endingTask().Wait();
+
+            var count = producerTask.Result;
+            var span = DateTime.Now - start;
+            Console.WriteLine($"{count} records took {span}");
+            if (count > 0) Console.WriteLine($"{count / span.TotalSeconds} records/s");
+
+            updateAlias(Name, index);
+
+            queue.CompleteAdding();
+            Console.WriteLine("Mark queue as completed.");
+
+            consumerTask.Wait();
+        }
+
+        private async Task endingTask()
+        {
+            await Task.WhenAll(pendingTasks);
+            // Spin until queue and pendingTasks are empty.
+            while (waitingCount > 0)
+            {
+                var sleepDuration = Math.Min(10000, (waitingCount) * 100);
+                Console.WriteLine($"Waiting for queues to empty... ({queue.Count}) ({pendingTasks.Count}) sleeping for {sleepDuration} ms");
+                await Task.Delay(sleepDuration);
+
+                await Task.WhenAll(pendingTasks);
+            }
+        }
+
         private Task consumerLoop(string index)
         {
             return Task.Run(() =>
             {
                 while (!queue.IsCompleted)
                 {
-                    List<T> chunk = null;
+                    if (delay > 0) Task.Delay(delay * 100).Wait();
+
+                    List<T> chunk;
 
                     try
                     {
@@ -56,11 +107,11 @@ namespace ElasticIndex
                         continue;
                     }
 
-                    var bulkDescriptor = new BulkDescriptor().Index(index);
-                    bulkDescriptor.IndexMany(chunk);
+                    var bulkDescriptor = new BulkDescriptor().Index(index).IndexMany(chunk);
 
                     Task<IBulkResponse> task = elasticClient.BulkAsync(bulkDescriptor);
                     pendingTasks.Add(task);
+
                     task.ContinueWith(t =>
                     {
                         // wait until after any requeueing needs to be done before removing the task.
@@ -77,56 +128,32 @@ namespace ElasticIndex
                         LastId = chunk.Last().CursorValue,
                         UpdatedAt = DateTimeOffset.UtcNow
                     });
+
+                    if (delay > 0) Interlocked.Decrement(ref delay);
                 }
             });
         }
 
-        public void Run()
+        private Task<long> producerLoop(long? resumeFrom)
         {
-            string index = findOrCreateIndex(Name);
-            var consumerTask = consumerLoop(index);
-
-            // find out if we should be resuming
-            var resumeFrom = ResumeFrom ?? IndexMeta.GetByName(index)?.LastId;
-
-            Console.WriteLine();
-            Console.WriteLine($"{typeof(T)}, index `{index}`, chunkSize `{AppSettings.ChunkSize}`, resume `{resumeFrom}`");
-            Console.WriteLine();
-
-            var start = DateTime.Now;
-            long count = 0;
-
-            using (dbConnection)
+            return Task.Run(() =>
             {
-                dbConnection.Open();
-                // TODO: retry needs to be added on timeout
-                var chunks = Model.Chunk<T>(dbConnection, AppSettings.ChunkSize, resumeFrom);
-                foreach (var chunk in chunks)
+                long count = 0;
+
+                using (dbConnection)
                 {
-                    queue.Add(chunk);
-                    count += chunk.Count;
+                    dbConnection.Open();
+                    // TODO: retry needs to be added on timeout
+                    var chunks = Model.Chunk<T>(dbConnection, AppSettings.ChunkSize, resumeFrom);
+                    foreach (var chunk in chunks)
+                    {
+                        queue.Add(chunk);
+                        count += chunk.Count;
+                    }
                 }
-            }
 
-            // Spin until queue and pendingTasks are empty.
-            while (queue.Count > 0 || pendingTasks.Count > 0)
-            {
-                var sleepDuration = Math.Min(10000, (queue.Count + pendingTasks.Count) * 100);
-                Console.WriteLine($"Waiting for queue to empty... ({queue.Count}) ({pendingTasks.Count}) sleeping for {sleepDuration} ms");
-                Thread.Sleep(sleepDuration);
-                Task.WaitAll(pendingTasks.ToArray());
-            }
-
-            var span = DateTime.Now - start;
-            Console.WriteLine($"{count} records took {span}");
-            if (count > 0) Console.WriteLine($"{count / span.TotalSeconds} records/s");
-
-            updateAlias(Name, index);
-
-            queue.CompleteAdding();
-            Console.WriteLine("Mark queue as completed.");
-
-            consumerTask.Wait();
+                return count;
+            });
         }
 
         /// <summary>
@@ -177,7 +204,10 @@ namespace ElasticIndex
         private void handleResult(IBulkResponse response, List<T> chunk)
         {
             if (response.ItemsWithErrors.All(item => item.Status != 429)) return;
+
+            Interlocked.Increment(ref delay);
             queue.Add(chunk);
+
             Console.WriteLine($"Server returned 429, requeued chunk with lastId {chunk.Last().CursorValue}");
         }
 
