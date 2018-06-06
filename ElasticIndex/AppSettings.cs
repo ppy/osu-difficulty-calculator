@@ -34,6 +34,9 @@ namespace ElasticIndex
 
             ConnectionString = config.GetConnectionString("osu");
 
+            if (!string.IsNullOrEmpty(config["queue_size"]))
+                QueueSize = int.Parse(config["queue_size"]);
+
             if (!string.IsNullOrEmpty(config["resume_from"]))
                 ResumeFrom = long.Parse(config["resume_from"]);
 
@@ -61,6 +64,8 @@ namespace ElasticIndex
         public static ImmutableArray<string> Modes { get; private set; }
 
         public static string Prefix { get; private set; }
+
+        public static int QueueSize { get; private set; } = 5;
 
         public static long? ResumeFrom { get; private set; }
     }

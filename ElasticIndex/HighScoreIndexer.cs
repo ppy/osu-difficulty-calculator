@@ -25,7 +25,7 @@ namespace ElasticIndex
         private readonly ElasticClient elasticClient;
 
         private readonly ConcurrentBag<Task<IBulkResponse>> pendingTasks = new ConcurrentBag<Task<IBulkResponse>>();
-        private readonly BlockingCollection<List<T>> queue = new BlockingCollection<List<T>>(5);
+        private readonly BlockingCollection<List<T>> queue = new BlockingCollection<List<T>>(AppSettings.QueueSize);
 
         private int waitingCount => pendingTasks.Count + queue.Count;
 
@@ -147,7 +147,7 @@ namespace ElasticIndex
                     foreach (var chunk in chunks)
                     {
                         // too many pending responses, wait and let them be handled.
-                        if (pendingTasks.Count > 5) {
+                        if (pendingTasks.Count > AppSettings.QueueSize) {
                             Console.WriteLine($"Too many pending responses ({pendingTasks.Count}), waiting...");
                             pendingTasks.First().Wait();
                         }
