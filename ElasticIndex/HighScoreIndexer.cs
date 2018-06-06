@@ -96,6 +96,7 @@ namespace ElasticIndex
                 while (!defaultQueue.IsCompleted || !retryQueue.IsCompleted)
                 {
                     if (delay > 0) Task.Delay(delay * 100).Wait();
+                    waitIfTooBusy();
 
                     List<T> chunk;
 
@@ -150,7 +151,6 @@ namespace ElasticIndex
                     var chunks = Model.Chunk<T>(dbConnection, AppSettings.ChunkSize, resumeFrom);
                     foreach (var chunk in chunks)
                     {
-                        producerWaitIfTooBusy();
                         defaultQueue.Add(chunk);
                         count += chunk.Count;
                     }
@@ -163,7 +163,7 @@ namespace ElasticIndex
             });
         }
 
-        private void producerWaitIfTooBusy()
+        private void waitIfTooBusy()
         {
             // too many pending responses, wait and let them be handled.
             if (pendingTasks.Count > AppSettings.QueueSize * 2) {
