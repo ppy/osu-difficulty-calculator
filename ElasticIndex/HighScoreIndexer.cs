@@ -146,12 +146,7 @@ namespace ElasticIndex
                     var chunks = Model.Chunk<T>(dbConnection, AppSettings.ChunkSize, resumeFrom);
                     foreach (var chunk in chunks)
                     {
-                        // too many pending responses, wait and let them be handled.
-                        if (pendingTasks.Count > AppSettings.QueueSize) {
-                            Console.WriteLine($"Too many pending responses ({pendingTasks.Count}), waiting...");
-                            pendingTasks.First().Wait();
-                        }
-
+                        producerWaitIfTooBusy();
                         queue.Add(chunk);
                         count += chunk.Count;
                     }
@@ -159,6 +154,15 @@ namespace ElasticIndex
 
                 return count;
             });
+        }
+
+        private void producerWaitIfTooBusy()
+        {
+            // too many pending responses, wait and let them be handled.
+            if (pendingTasks.Count > AppSettings.QueueSize) {
+                Console.WriteLine($"Too many pending responses ({pendingTasks.Count}), waiting...");
+                pendingTasks.FirstOrDefault()?.Wait();
+            }
         }
 
         /// <summary>
