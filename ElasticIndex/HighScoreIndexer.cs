@@ -44,8 +44,6 @@ namespace ElasticIndex
         public void Run()
         {
             var index = findOrCreateIndex(Name);
-            var consumerTask = consumerLoop(index);
-
             // find out if we should be resuming
             var resumeFrom = ResumeFrom ?? IndexMeta.GetByName(index)?.LastId;
 
@@ -54,6 +52,7 @@ namespace ElasticIndex
             Console.WriteLine();
 
             var start = DateTime.Now;
+            var consumerTask = consumerLoop(index);
             var producerTask = producerLoop(resumeFrom);
 
             producerTask.Wait();
