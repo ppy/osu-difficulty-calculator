@@ -30,7 +30,7 @@ namespace ElasticIndex
         private int waitingCount => pendingTasks.Count + queue.Count;
 
         // throttle control
-        private int delay = 0;
+        private int delay;
 
         public HighScoreIndexer()
         {
