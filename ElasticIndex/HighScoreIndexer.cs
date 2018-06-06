@@ -25,15 +25,21 @@ namespace ElasticIndex
         private readonly ElasticClient elasticClient;
 
         private readonly ConcurrentBag<Task<IBulkResponse>> pendingTasks = new ConcurrentBag<Task<IBulkResponse>>();
-        private readonly BlockingCollection<List<T>> queue = new BlockingCollection<List<T>>(AppSettings.QueueSize);
 
-        private int waitingCount => pendingTasks.Count + queue.Count;
+        // Queues
+        private readonly BlockingCollection<List<T>> defaultQueue = new BlockingCollection<List<T>>(AppSettings.QueueSize);
+        private readonly BlockingCollection<List<T>> retryQueue = new BlockingCollection<List<T>>(AppSettings.QueueSize);
+        private readonly BlockingCollection<List<T>>[] queues;
+
+        private int waitingCount => pendingTasks.Count + defaultQueue.Count + retryQueue.Count;
 
         // throttle control
         private int delay;
 
         public HighScoreIndexer()
         {
+            queues = new [] { retryQueue, defaultQueue };
+
             dbConnection = new MySqlConnection(AppSettings.ConnectionString);
             elasticClient = new ElasticClient
             (
@@ -57,6 +63,7 @@ namespace ElasticIndex
 
             producerTask.Wait();
             endingTask().Wait();
+            consumerTask.Wait();
 
             var count = producerTask.Result;
             var span = DateTime.Now - start;
@@ -64,11 +71,6 @@ namespace ElasticIndex
             if (count > 0) Console.WriteLine($"{count / span.TotalSeconds} records/s");
 
             updateAlias(Name, index);
-
-            queue.CompleteAdding();
-            Console.WriteLine("Mark queue as completed.");
-
-            consumerTask.Wait();
         }
 
         private async Task endingTask()
@@ -78,18 +80,20 @@ namespace ElasticIndex
             while (waitingCount > 0)
             {
                 var delayDuration = Math.Max(waitingCount, delay) * 100;
-                Console.WriteLine($"Waiting for queues to empty... ({queue.Count}) ({pendingTasks.Count}) delay for {delayDuration} ms");
-                await Task.Delay(delayDuration);
+                Console.WriteLine($@"Waiting for queues to empty...({defaultQueue.Count}) ({retryQueue.Count}) ({pendingTasks.Count}) delay for {delayDuration} ms");
 
+                await Task.Delay(delayDuration);
                 await Task.WhenAll(pendingTasks);
             }
+
+            retryQueue.CompleteAdding();
         }
 
         private Task consumerLoop(string index)
         {
             return Task.Run(() =>
             {
-                while (!queue.IsCompleted)
+                while (!defaultQueue.IsCompleted || !retryQueue.IsCompleted)
                 {
                     if (delay > 0) Task.Delay(delay * 100).Wait();
 
@@ -97,9 +101,9 @@ namespace ElasticIndex
 
                     try
                     {
-                        chunk = queue.Take();
+                        BlockingCollection<List<T>>.TakeFromAny(queues, out chunk);
                     }
-                    catch (InvalidOperationException ex)
+                    catch (ArgumentException ex)
                     {
                         // queue was marked as completed while blocked.
                         Console.WriteLine(ex.Message);
@@ -147,10 +151,13 @@ namespace ElasticIndex
                     foreach (var chunk in chunks)
                     {
                         producerWaitIfTooBusy();
-                        queue.Add(chunk);
+                        defaultQueue.Add(chunk);
                         count += chunk.Count;
                     }
                 }
+
+                defaultQueue.CompleteAdding();
+                Console.WriteLine("Mark queue as completed.");
 
                 return count;
             });
@@ -159,7 +166,7 @@ namespace ElasticIndex
         private void producerWaitIfTooBusy()
         {
             // too many pending responses, wait and let them be handled.
-            if (pendingTasks.Count > AppSettings.QueueSize) {
+            if (pendingTasks.Count > AppSettings.QueueSize * 2) {
                 Console.WriteLine($"Too many pending responses ({pendingTasks.Count}), waiting...");
                 pendingTasks.FirstOrDefault()?.Wait();
             }
@@ -215,7 +222,7 @@ namespace ElasticIndex
             if (response.ItemsWithErrors.All(item => item.Status != 429)) return;
 
             Interlocked.Increment(ref delay);
-            queue.Add(chunk);
+            retryQueue.Add(chunk);
 
             Console.WriteLine($"Server returned 429, requeued chunk with lastId {chunk.Last().CursorValue}");
         }
