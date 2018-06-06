@@ -146,6 +146,12 @@ namespace ElasticIndex
                     var chunks = Model.Chunk<T>(dbConnection, AppSettings.ChunkSize, resumeFrom);
                     foreach (var chunk in chunks)
                     {
+                        // too many pending responses, wait and let them be handled.
+                        if (pendingTasks.Count > 5) {
+                            Console.WriteLine($"Too many pending responses ({pendingTasks.Count}), waiting...");
+                            pendingTasks.First().Wait();
+                        }
+
                         queue.Add(chunk);
                         count += chunk.Count;
                     }
