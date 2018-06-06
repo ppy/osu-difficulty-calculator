@@ -78,7 +78,7 @@ namespace ElasticIndex
             // Spin until queue and pendingTasks are empty.
             while (waitingCount > 0)
             {
-                var sleepDuration = Math.Min(10000, (waitingCount) * 100);
+                var sleepDuration = Math.Min(10000, (Math.Max(waitingCount, delay) * 100);
                 Console.WriteLine($"Waiting for queues to empty... ({queue.Count}) ({pendingTasks.Count}) sleeping for {sleepDuration} ms");
                 await Task.Delay(sleepDuration);
 
