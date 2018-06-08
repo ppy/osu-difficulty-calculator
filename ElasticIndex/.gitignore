@@ -1,0 +1,2 @@
+# Ignore environment-specific appsettings
+appsettings.*.json
