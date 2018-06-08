@@ -12,7 +12,8 @@ namespace ElasticIndex
     {
         public void Run()
         {
-            if (AppSettings.IsWatching) Console.WriteLine("Running in watch mode.");
+            if (AppSettings.IsWatching)
+                Console.WriteLine($"Running in watch mode with {AppSettings.PollingInterval}ms poll.");
 
             bool ranOnce = false;
 
@@ -22,7 +23,7 @@ namespace ElasticIndex
                 // last known saved point instead of the configured value.
                 RunLoop(ranOnce ? null : AppSettings.ResumeFrom);
                 ranOnce = true;
-                if (AppSettings.IsWatching) Thread.Sleep(10000);
+                if (AppSettings.IsWatching) Thread.Sleep(AppSettings.PollingInterval);
             }
         }
 

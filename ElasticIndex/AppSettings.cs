@@ -41,6 +41,9 @@ namespace ElasticIndex
                 ResumeFrom = long.Parse(config["resume_from"]);
 
             IsWatching = new [] { "1", "true" }.Contains((config["watch"] ?? string.Empty).ToLowerInvariant());
+            PollingInterval = string.IsNullOrEmpty(config["polling_interval"])
+                              ? 10000
+                              : int.Parse(config["polling_interval"]);
 
             Prefix = config["elasticsearch:prefix"];
 
@@ -62,6 +65,8 @@ namespace ElasticIndex
         public static bool IsWatching { get; private set; }
 
         public static ImmutableArray<string> Modes { get; private set; }
+
+        public static int PollingInterval { get; private set; }
 
         public static string Prefix { get; private set; }
 
