@@ -5,14 +5,17 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
 using McMaster.Extensions.CommandLineUtils;
 using osu.Game.Beatmaps.Legacy;
+using osu.Game.Rulesets.Difficulty;
+using osu.Game.Rulesets.Mania.Difficulty;
 using osu.Game.Rulesets.Mania.Mods;
 using osu.Game.Rulesets.Mods;
+using osu.Game.Rulesets.Osu.Difficulty;
+using osu.Game.Rulesets.Taiko.Difficulty;
 
 namespace osu.Server.DifficultyCalculator
 {
@@ -89,18 +92,14 @@ namespace osu.Server.DifficultyCalculator
 
             var localBeatmap = new LocalWorkingBeatmap(path);
 
-            // Todo: For each ruleset
-            var playable = localBeatmap.GetPlayableBeatmap(localBeatmap.BeatmapInfo.Ruleset);
-            var ruleset = localBeatmap.BeatmapInfo.Ruleset.CreateInstance();
-
             using (var conn = database.GetConnection())
             {
-                foreach (var mod in ruleset.GetModsFor(ModType.DifficultyCalculation))
-                {
-                    var legacyMod = toLegacyMod(mod);
+                // Todo: For each ruleset
+                var ruleset = localBeatmap.BeatmapInfo.Ruleset.CreateInstance();
 
-                    var attributes = new Dictionary<string, object>();
-                    double starRating = ruleset.CreateDifficultyCalculator(playable, toModArray(mod)).Calculate(attributes);
+                foreach (var attribute in ruleset.CreateDifficultyCalculator(localBeatmap).CalculateAll())
+                {
+                    var legacyMod = toLegacyMod(attribute.Mods);
 
                     conn.Execute(
                         "INSERT INTO osu_beatmap_difficulty (beatmap_id, mode, mods, diff_unified) "
@@ -111,33 +110,27 @@ namespace osu.Server.DifficultyCalculator
                             BeatmapId = beatmapId,
                             Mode = ruleset.RulesetInfo.ID,
                             Mods = (int)legacyMod,
-                            Diff = starRating
+                            Diff = attribute.StarRating
                         });
 
-                    if (attributes.Count > 0)
+                    var parameters = new List<object>();
+                    foreach (var mapping in getAttributeMappings(attribute))
                     {
-                        var parameters = new List<object>();
-                        foreach (var kvp in attributes)
+                        parameters.Add(new
                         {
-                            if (!attributeIds.ContainsKey(kvp.Key))
-                                continue;
-
-                            parameters.Add(new
-                            {
-                                BeatmapId = beatmapId,
-                                Mode = ruleset.RulesetInfo.ID,
-                                Mods = (int)legacyMod,
-                                Attribute = attributeIds[kvp.Key],
-                                Value = Convert.ToSingle(kvp.Value)
-                            });
-                        }
-
-                        conn.Execute(
-                            "INSERT INTO osu_beatmap_difficulty_attribs (beatmap_id, mode, mods, attrib_id, value) "
-                            + "VALUES (@BeatmapId, @Mode, @Mods, @Attribute, @Value) "
-                            + "ON DUPLICATE KEY UPDATE value = VALUES(value)",
-                            parameters.ToArray());
+                            BeatmapId = beatmapId,
+                            Mode = ruleset.RulesetInfo.ID,
+                            Mods = (int)legacyMod,
+                            Attribute = mapping.id,
+                            Value = Convert.ToSingle(mapping.value)
+                        });
                     }
+
+                    conn.Execute(
+                        "INSERT INTO osu_beatmap_difficulty_attribs (beatmap_id, mode, mods, attrib_id, value) "
+                        + "VALUES (@BeatmapId, @Mode, @Mods, @Attribute, @Value) "
+                        + "ON DUPLICATE KEY UPDATE value = VALUES(value)",
+                        parameters.ToArray());
 
                     if (legacyMod == LegacyMods.None && ruleset.RulesetInfo.Equals(localBeatmap.BeatmapInfo.Ruleset))
                     {
@@ -147,7 +140,7 @@ namespace osu.Server.DifficultyCalculator
                             new
                             {
                                 BeatmapId = beatmapId,
-                                Diff = starRating,
+                                Diff = attribute.StarRating,
                                 AR = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.ApproachRate,
                                 OD = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty,
                                 HP = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.DrainRate,
@@ -166,86 +159,95 @@ namespace osu.Server.DifficultyCalculator
             Console.WriteLine($"{processedBeatmaps} / {totalBeatmaps} : {message}");
         }
 
-        private Mod[] toModArray(Mod mod)
+        private IEnumerable<(int id, object value)> getAttributeMappings(DifficultyAttributes attributes)
         {
-            switch (mod)
+            switch (attributes)
             {
-                case MultiMod multi:
-                    return multi.Mods?.SelectMany(toModArray).ToArray() ?? Array.Empty<Mod>();
-                default:
-                    return new[] { mod };
+                case OsuDifficultyAttributes osu:
+                    yield return (1, osu.AimStrain);
+                    yield return (3, osu.SpeedStrain);
+                    yield return (5, osu.OverallDifficulty);
+                    yield return (7, osu.ApproachRate);
+                    yield return (9, osu.MaxCombo);
+                    break;
+                case TaikoDifficultyAttributes taiko:
+                    yield return (9, taiko.MaxCombo);
+                    yield return (13, taiko.GreatHitWindow);
+                    break;
+                case ManiaDifficultyAttributes mania:
+                    yield return (13, mania.GreatHitWindow);
+                    break;
             }
+
+            yield return (11, attributes.StarRating);
         }
 
-        private LegacyMods toLegacyMod(Mod mod)
+        private LegacyMods toLegacyMod(Mod[] mods)
         {
             var value = LegacyMods.None;
 
-            switch (mod)
+            foreach (var mod in mods)
             {
-                case MultiMod multi:
-                    if (multi.Mods == null)
+                switch (mod)
+                {
+                    case ModNoFail _:
+                        value |= LegacyMods.NoFail;
                         break;
-                    foreach (var m in multi.Mods)
-                        value |= toLegacyMod(m);
-                    break;
-                case ModNoFail _:
-                    value |= LegacyMods.NoFail;
-                    break;
-                case ModEasy _:
-                    value |= LegacyMods.Easy;
-                    break;
-                case ModHidden _:
-                    value |= LegacyMods.Hidden;
-                    break;
-                case ModHardRock _:
-                    value |= LegacyMods.HardRock;
-                    break;
-                case ModSuddenDeath _:
-                    value |= LegacyMods.SuddenDeath;
-                    break;
-                case ModDoubleTime _:
-                    value |= LegacyMods.DoubleTime;
-                    break;
-                case ModRelax _:
-                    value |= LegacyMods.Relax;
-                    break;
-                case ModHalfTime _:
-                    value |= LegacyMods.HalfTime;
-                    break;
-                case ModFlashlight _:
-                    value |= LegacyMods.Flashlight;
-                    break;
-                case ManiaModKey1 _:
-                    value |= LegacyMods.Key1;
-                    break;
-                case ManiaModKey2 _:
-                    value |= LegacyMods.Key2;
-                    break;
-                case ManiaModKey3 _:
-                    value |= LegacyMods.Key3;
-                    break;
-                case ManiaModKey4 _:
-                    value |= LegacyMods.Key4;
-                    break;
-                case ManiaModKey5 _:
-                    value |= LegacyMods.Key5;
-                    break;
-                case ManiaModKey6 _:
-                    value |= LegacyMods.Key6;
-                    break;
-                case ManiaModKey7 _:
-                    value |= LegacyMods.Key7;
-                    break;
-                case ManiaModKey8 _:
-                    value |= LegacyMods.Key8;
-                    break;
-                case ManiaModKey9 _:
-                    value |= LegacyMods.Key9;
-                    break;
-                case ManiaModFadeIn _:
-                    value |= LegacyMods.FadeIn;
-                    break;
+                    case ModEasy _:
+                        value |= LegacyMods.Easy;
+                        break;
+                    case ModHidden _:
+                        value |= LegacyMods.Hidden;
+                        break;
+                    case ModHardRock _:
+                        value |= LegacyMods.HardRock;
+                        break;
+                    case ModSuddenDeath _:
+                        value |= LegacyMods.SuddenDeath;
+                        break;
+                    case ModDoubleTime _:
+                        value |= LegacyMods.DoubleTime;
+                        break;
+                    case ModRelax _:
+                        value |= LegacyMods.Relax;
+                        break;
+                    case ModHalfTime _:
+                        value |= LegacyMods.HalfTime;
+                        break;
+                    case ModFlashlight _:
+                        value |= LegacyMods.Flashlight;
+                        break;
+                    case ManiaModKey1 _:
+                        value |= LegacyMods.Key1;
+                        break;
+                    case ManiaModKey2 _:
+                        value |= LegacyMods.Key2;
+                        break;
+                    case ManiaModKey3 _:
+                        value |= LegacyMods.Key3;
+                        break;
+                    case ManiaModKey4 _:
+                        value |= LegacyMods.Key4;
+                        break;
+                    case ManiaModKey5 _:
+                        value |= LegacyMods.Key5;
+                        break;
+                    case ManiaModKey6 _:
+                        value |= LegacyMods.Key6;
+                        break;
+                    case ManiaModKey7 _:
+                        value |= LegacyMods.Key7;
+                        break;
+                    case ManiaModKey8 _:
+                        value |= LegacyMods.Key8;
+                        break;
+                    case ManiaModKey9 _:
+                        value |= LegacyMods.Key9;
+                        break;
+                    case ManiaModFadeIn _:
+                        value |= LegacyMods.FadeIn;
+                        break;
+                }
             }
 
             return value;
