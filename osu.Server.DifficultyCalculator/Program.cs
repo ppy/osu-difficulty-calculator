@@ -5,11 +5,16 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
 using McMaster.Extensions.CommandLineUtils;
+using MySql.Data.MySqlClient;
+using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Legacy;
+using osu.Game.Rulesets;
 using osu.Game.Rulesets.Difficulty;
 using osu.Game.Rulesets.Mania.Difficulty;
 using osu.Game.Rulesets.Mania.Mods;
@@ -22,6 +27,8 @@ namespace osu.Server.DifficultyCalculator
     [Command]
     public class Program
     {
+        private const string ruleset_library_prefix = "osu.Game.Rulesets";
+
         public static void Main(string[] args)
             => CommandLineApplication.Execute<Program>(args);
 
@@ -34,6 +41,8 @@ namespace osu.Server.DifficultyCalculator
 
         private readonly ConcurrentQueue<int> beatmaps = new ConcurrentQueue<int>();
 
+        private readonly List<Ruleset> rulesets = new List<Ruleset>();
+
         private int totalBeatmaps;
         private int processedBeatmaps;
 
@@ -43,6 +52,21 @@ namespace osu.Server.DifficultyCalculator
             {
                 console.Error.WriteLine("Concurrency level must be above 1.");
                 return;
+            }
+
+            foreach (string file in Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, $"{ruleset_library_prefix}.*.dll"))
+            {
+                try
+                {
+                    var assembly = Assembly.LoadFrom(file);
+                    Type type = assembly.GetTypes().First(t => t.IsPublic && t.IsSubclassOf(typeof(Ruleset)));
+                    rulesets.Add((Ruleset)Activator.CreateInstance(type, (RulesetInfo)null));
+
+                }
+                catch
+                {
+                    Console.Error.WriteLine("Failed to load ruleset");
+                }
             }
 
             database = new Database(AppSettings.ConnectionString);
@@ -94,63 +118,71 @@ namespace osu.Server.DifficultyCalculator
 
             using (var conn = database.GetConnection())
             {
-                // Todo: For each ruleset
-                var ruleset = localBeatmap.BeatmapInfo.Ruleset.CreateInstance();
-
-                foreach (var attribute in ruleset.CreateDifficultyCalculator(localBeatmap).CalculateAll())
+                if (localBeatmap.BeatmapInfo.RulesetID == 0)
                 {
-                    var legacyMod = toLegacyMod(attribute.Mods);
-
-                    conn.Execute(
-                        "INSERT INTO osu_beatmap_difficulty (beatmap_id, mode, mods, diff_unified) "
-                        + "VALUES (@BeatmapId, @Mode, @Mods, @Diff) "
-                        + "ON DUPLICATE KEY UPDATE diff_unified = @Diff",
-                        new
-                        {
-                            BeatmapId = beatmapId,
-                            Mode = ruleset.RulesetInfo.ID,
-                            Mods = (int)legacyMod,
-                            Diff = attribute.StarRating
-                        });
-
-                    var parameters = new List<object>();
-                    foreach (var mapping in getAttributeMappings(attribute))
-                    {
-                        parameters.Add(new
-                        {
-                            BeatmapId = beatmapId,
-                            Mode = ruleset.RulesetInfo.ID,
-                            Mods = (int)legacyMod,
-                            Attribute = mapping.id,
-                            Value = Convert.ToSingle(mapping.value)
-                        });
-                    }
-
-                    conn.Execute(
-                        "INSERT INTO osu_beatmap_difficulty_attribs (beatmap_id, mode, mods, attrib_id, value) "
-                        + "VALUES (@BeatmapId, @Mode, @Mods, @Attribute, @Value) "
-                        + "ON DUPLICATE KEY UPDATE value = VALUES(value)",
-                        parameters.ToArray());
-
-                    if (legacyMod == LegacyMods.None && ruleset.RulesetInfo.Equals(localBeatmap.BeatmapInfo.Ruleset))
-                    {
-                        conn.Execute(
-                            "UPDATE osu_beatmaps SET difficultyrating=@Diff, diff_approach=@AR, diff_overall=@OD, diff_drain=@HP, diff_size=@CS "
-                            + "WHERE beatmap_id=@BeatmapId",
-                            new
-                            {
-                                BeatmapId = beatmapId,
-                                Diff = attribute.StarRating,
-                                AR = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.ApproachRate,
-                                OD = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty,
-                                HP = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.DrainRate,
-                                CS = localBeatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize
-                            });
-                    }
+                    foreach (var ruleset in rulesets)
+                        computeDifficulty(beatmapId, localBeatmap, ruleset, conn);
                 }
+                else
+                    computeDifficulty(beatmapId, localBeatmap, localBeatmap.BeatmapInfo.Ruleset.CreateInstance(), conn);
             }
 
             finish($"Difficulty updated for beatmap {beatmapId}.");
+        }
+
+        private void computeDifficulty(int beatmapId, WorkingBeatmap beatmap, Ruleset ruleset, MySqlConnection conn)
+        {
+            foreach (var attribute in ruleset.CreateDifficultyCalculator(beatmap).CalculateAll())
+            {
+                var legacyMod = toLegacyMod(attribute.Mods);
+
+                conn.Execute(
+                    "INSERT INTO osu_beatmap_difficulty (beatmap_id, mode, mods, diff_unified) "
+                    + "VALUES (@BeatmapId, @Mode, @Mods, @Diff) "
+                    + "ON DUPLICATE KEY UPDATE diff_unified = @Diff",
+                    new
+                    {
+                        BeatmapId = beatmapId,
+                        Mode = ruleset.RulesetInfo.ID,
+                        Mods = (int)legacyMod,
+                        Diff = attribute.StarRating
+                    });
+
+                var parameters = new List<object>();
+                foreach (var mapping in getAttributeMappings(attribute))
+                {
+                    parameters.Add(new
+                    {
+                        BeatmapId = beatmapId,
+                        Mode = ruleset.RulesetInfo.ID,
+                        Mods = (int)legacyMod,
+                        Attribute = mapping.id,
+                        Value = Convert.ToSingle(mapping.value)
+                    });
+                }
+
+                conn.Execute(
+                    "INSERT INTO osu_beatmap_difficulty_attribs (beatmap_id, mode, mods, attrib_id, value) "
+                    + "VALUES (@BeatmapId, @Mode, @Mods, @Attribute, @Value) "
+                    + "ON DUPLICATE KEY UPDATE value = VALUES(value)",
+                    parameters.ToArray());
+
+                if (legacyMod == LegacyMods.None && ruleset.RulesetInfo.Equals(beatmap.BeatmapInfo.Ruleset))
+                {
+                    conn.Execute(
+                        "UPDATE osu_beatmaps SET difficultyrating=@Diff, diff_approach=@AR, diff_overall=@OD, diff_drain=@HP, diff_size=@CS "
+                        + "WHERE beatmap_id=@BeatmapId",
+                        new
+                        {
+                            BeatmapId = beatmapId,
+                            Diff = attribute.StarRating,
+                            AR = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.ApproachRate,
+                            OD = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty,
+                            HP = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.DrainRate,
+                            CS = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize
+                        });
+                }
+            }
         }
 
         private void finish(string message)
