@@ -35,6 +35,9 @@ namespace osu.Server.DifficultyCalculator
         [Option]
         public int Concurrency { get; set; } = 1;
 
+        [Option("--allow-converts")]
+        public bool Converts { get; set; } = false;
+
         private readonly Dictionary<string, int> attributeIds = new Dictionary<string, int>();
 
         private Database database;
@@ -118,7 +121,7 @@ namespace osu.Server.DifficultyCalculator
 
             using (var conn = database.GetConnection())
             {
-                if (localBeatmap.BeatmapInfo.RulesetID == 0)
+                if (Converts && localBeatmap.BeatmapInfo.RulesetID == 0)
                 {
                     foreach (var ruleset in rulesets)
                         computeDifficulty(beatmapId, localBeatmap, ruleset, conn);
