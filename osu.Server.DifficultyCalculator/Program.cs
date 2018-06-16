@@ -35,8 +35,11 @@ namespace osu.Server.DifficultyCalculator
         [Option]
         public int Concurrency { get; set; } = 1;
 
-        [Option("--allow-converts")]
+        [Option(CommandOptionType.NoValue, Template = "--allow-converts")]
         public bool Converts { get; set; } = false;
+
+        [Option(CommandOptionType.MultipleValue, Template = "--ruleset|-r <RULESET_ID>")]
+        public int[] Rulesets { get; set; }
 
         private readonly Dictionary<string, int> attributeIds = new Dictionary<string, int>();
 
@@ -71,6 +74,9 @@ namespace osu.Server.DifficultyCalculator
                     Console.Error.WriteLine("Failed to load ruleset");
                 }
             }
+
+            if (Rulesets != null)
+                rulesets.RemoveAll(r => Rulesets.All(u => u != r.RulesetInfo.ID));
 
             database = new Database(AppSettings.ConnectionString);
 
@@ -126,7 +132,7 @@ namespace osu.Server.DifficultyCalculator
                     foreach (var ruleset in rulesets)
                         computeDifficulty(beatmapId, localBeatmap, ruleset, conn);
                 }
-                else
+                else if (rulesets.Any(r => r.RulesetInfo.ID == localBeatmap.BeatmapInfo.RulesetID))
                     computeDifficulty(beatmapId, localBeatmap, localBeatmap.BeatmapInfo.Ruleset.CreateInstance(), conn);
             }
 
