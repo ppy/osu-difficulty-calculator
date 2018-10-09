@@ -13,6 +13,7 @@ using Dapper;
 using McMaster.Extensions.CommandLineUtils;
 using MySql.Data.MySqlClient;
 using osu.Game.Beatmaps;
+using osu.Game.Beatmaps.Formats;
 using osu.Game.Beatmaps.Legacy;
 using osu.Game.Rulesets;
 using osu.Game.Rulesets.Difficulty;
@@ -30,7 +31,11 @@ namespace osu.Server.DifficultyCalculator
         private const string ruleset_library_prefix = "osu.Game.Rulesets";
 
         public static void Main(string[] args)
-            => CommandLineApplication.Execute<Program>(args);
+        {
+            LegacyDifficultyCalculatorBeatmapDecoder.Register();
+
+            CommandLineApplication.Execute<Program>(args);
+        }
 
         [Option]
         public int Concurrency { get; set; } = 1;
