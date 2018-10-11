@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,6 +34,7 @@ namespace osu.Server.DifficultyCalculator
         public static void Main(string[] args)
         {
             LegacyDifficultyCalculatorBeatmapDecoder.Register();
+            ServicePointManager.DefaultConnectionLimit = 128;
 
             CommandLineApplication.Execute<Program>(args);
         }
