@@ -12,6 +12,9 @@ namespace osu.Server.DifficultyCalculator
         public static string ConnectionString { get; }
         public static string BeatmapsPath { get; }
 
+        public static bool AllowDownload { get; }
+        public static string DownloadPath { get; }
+
         static AppSettings()
         {
             var env = Environment.GetEnvironmentVariable("APP_ENV") ?? "development";
@@ -24,6 +27,9 @@ namespace osu.Server.DifficultyCalculator
 
             ConnectionString = config.GetConnectionString("osu");
             BeatmapsPath = config["beatmaps_path"];
+
+            AllowDownload = bool.Parse(config["allow_download"]);
+            DownloadPath = config["download_path"];
         }
     }
 }

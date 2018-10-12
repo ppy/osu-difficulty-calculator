@@ -39,6 +39,9 @@ namespace osu.Server.DifficultyCalculator.Commands
         [Option(CommandOptionType.NoValue, Template = "-v|--verbose", Description = "Provide verbose console output.")]
         public bool Verbose { get; set; }
 
+        [Option(CommandOptionType.NoValue, Template = "-d|--force-download", Description = "Force download of all beatmaps.")]
+        public bool ForceDownload { get; set; }
+
         protected virtual Database Database { get; private set; }
 
         private int totalBeatmaps;
@@ -81,15 +84,13 @@ namespace osu.Server.DifficultyCalculator.Commands
         {
             try
             {
-                string path = Path.Combine(AppSettings.BeatmapsPath, beatmapId + ".osu");
-                if (!File.Exists(path))
+                var localBeatmap = BeatmapLoader.GetBeatmap(beatmapId, Verbose, ForceDownload);
+                if (localBeatmap == null)
                 {
                     if (Verbose)
                         Console.WriteLine($"Beatmap {beatmapId} skipped (beatmap file not found).");
                     return;
                 }
-
-                var localBeatmap = new LocalWorkingBeatmap(path);
 
                 using (var conn = Database.GetConnection())
                 {
