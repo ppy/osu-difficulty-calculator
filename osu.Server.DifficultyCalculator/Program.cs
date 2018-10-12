@@ -48,6 +48,9 @@ namespace osu.Server.DifficultyCalculator
         [Option(CommandOptionType.MultipleValue, Template = "--ruleset|-r <RULESET_ID>")]
         public int[] Rulesets { get; set; }
 
+        [Option]
+        public bool Verbose { get; set; }
+
         private readonly Dictionary<string, int> attributeIds = new Dictionary<string, int>();
 
         private Database database;
@@ -103,7 +106,8 @@ namespace osu.Server.DifficultyCalculator
             for (int i = 0; i < Concurrency; i++)
                 tasks.Add(processBeatmaps());
 
-            Task.WaitAll(tasks.ToArray());
+            using (new Timer(new TimerCallback(_ => outputProgress()), null, 1000, 1000))
+                Task.WaitAll(tasks.ToArray());
         }
 
         private Task processBeatmaps() => Task.Factory.StartNew(() =>
@@ -201,10 +205,17 @@ namespace osu.Server.DifficultyCalculator
             }
         }
 
-        private void finish(string message)
+        private void outputProgress()
+        {
+            Console.WriteLine($"Processed {processedBeatmaps} / {totalBeatmaps}");
+        }
+
+        private void finish(string message = null)
         {
             Interlocked.Increment(ref processedBeatmaps);
-            Console.WriteLine($"{processedBeatmaps} / {totalBeatmaps} : {message}");
+
+            if (Verbose && message != null)
+                Console.WriteLine(message);
         }
 
         private IEnumerable<(int id, object value)> getAttributeMappings(DifficultyAttributes attributes)
