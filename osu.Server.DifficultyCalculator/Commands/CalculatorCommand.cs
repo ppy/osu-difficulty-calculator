@@ -36,9 +36,6 @@ namespace osu.Server.DifficultyCalculator.Commands
         [Option(CommandOptionType.SingleValue, Template = "-c|--concurrency", Description = "The number of threads to use. Default 1.")]
         public int Concurrency { get; set; } = 1;
 
-        [Option("-t|--timeout <TIMEOUT>", Description = "Time allowable to execute this command. Default -1.")]
-        public int Timeout { get; set; } = -1;
-
         [Option(CommandOptionType.NoValue, Template = "-v|--verbose", Description = "Provide verbose console output.")]
         public bool Verbose { get; set; }
 
