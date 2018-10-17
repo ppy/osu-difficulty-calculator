@@ -27,7 +27,17 @@ namespace osu.Server.DifficultyCalculator
         {
             this.console = console;
             if (file != null)
-                fileWriter = new StreamWriter(new FileStream(file, FileMode.Create, FileAccess.Write, FileShare.Read));
+            {
+                try
+                {
+                    fileWriter = new StreamWriter(new FileStream(file, FileMode.Create, FileAccess.Write, FileShare.Read));
+                }
+                catch (Exception e)
+                {
+                    Warn($"Failed to initialise log file ({file}): {e}");
+                    Warn("Continuing without log file.");
+                }
+            }
         }
 
         private void writeLine(TextWriter consoleWriter, string message, ConsoleColor? foregroundColour = null)
