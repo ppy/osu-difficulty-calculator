@@ -71,7 +71,7 @@ namespace osu.Server.DifficultyCalculator.Commands
             }
 
             MasterDatabase = new Database(AppSettings.ConnectionStringMaster);
-            SlaveDatabase = new Database(AppSettings.ConnectionStringSlave);
+            SlaveDatabase = new Database(AppSettings.ConnectionStringSlave ?? AppSettings.ConnectionStringMaster);
 
             var rulesetsToProcess = getRulesets();
             var beatmaps = new ConcurrentQueue<int>(GetBeatmaps());
