@@ -48,7 +48,8 @@ namespace osu.Server.DifficultyCalculator.Commands
         [Option(CommandOptionType.SingleValue, Template = "-l|--log-file", Description = "The file to log output to.")]
         public string LogFile { get; set; }
 
-        protected virtual Database Database { get; private set; }
+        protected Database MasterDatabase { get; private set; }
+        protected Database SlaveDatabase { get; private set; }
 
         private IReporter reporter;
 
@@ -69,7 +70,8 @@ namespace osu.Server.DifficultyCalculator.Commands
                 return;
             }
 
-            Database = new Database(AppSettings.ConnectionString);
+            MasterDatabase = new Database(AppSettings.ConnectionStringMaster);
+            SlaveDatabase = new Database(AppSettings.ConnectionStringSlave);
 
             var rulesetsToProcess = getRulesets();
             var beatmaps = new ConcurrentQueue<int>(GetBeatmaps());
@@ -105,7 +107,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                     return;
                 }
 
-                using (var conn = Database.GetConnection())
+                using (var conn = MasterDatabase.GetConnection())
                 {
                     if (Converts && localBeatmap.BeatmapInfo.RulesetID == 0)
                     {

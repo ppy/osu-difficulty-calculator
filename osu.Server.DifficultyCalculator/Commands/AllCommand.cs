@@ -15,7 +15,7 @@ namespace osu.Server.DifficultyCalculator.Commands
 
         protected override IEnumerable<int> GetBeatmaps()
         {
-            using (var conn = Database.GetConnection())
+            using (var conn = SlaveDatabase.GetConnection())
             {
                 var condition = CombineSqlConditions(
                     RankedOnly ? "approved >= 1" : null

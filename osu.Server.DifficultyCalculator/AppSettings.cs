@@ -9,7 +9,9 @@ namespace osu.Server.DifficultyCalculator
 {
     public class AppSettings
     {
-        public static string ConnectionString { get; }
+        public static string ConnectionStringMaster { get; }
+        public static string ConnectionStringSlave { get; }
+
         public static string BeatmapsPath { get; }
 
         public static bool AllowDownload { get; }
@@ -25,7 +27,9 @@ namespace osu.Server.DifficultyCalculator
                          .AddEnvironmentVariables()
                          .Build();
 
-            ConnectionString = config.GetConnectionString("osu");
+            ConnectionStringMaster = config.GetConnectionString("master");
+            ConnectionStringSlave = config.GetConnectionString("slave");
+
             BeatmapsPath = config["beatmaps_path"];
 
             AllowDownload = bool.Parse(config["allow_download"]);
