@@ -26,6 +26,7 @@ namespace osu.Server.DifficultyCalculator
         public Reporter(IConsole console, string file = null)
         {
             this.console = console;
+
             if (file != null)
             {
                 try

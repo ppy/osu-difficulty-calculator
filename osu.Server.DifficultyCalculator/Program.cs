@@ -22,7 +22,7 @@ namespace osu.Server.DifficultyCalculator
             CommandLineApplication.Execute<Program>(args);
         }
 
-        public int OnExecute(CommandLineApplication app, IConsole console)
+        public int OnExecute(CommandLineApplication app)
         {
             app.ShowHelp();
             return 1;
