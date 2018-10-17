@@ -23,7 +23,7 @@ namespace osu.Server.DifficultyCalculator.Commands
     {
         private const string ruleset_library_prefix = "osu.Game.Rulesets";
 
-        [Option(CommandOptionType.MultipleValue, Template = "-m|--mode <RULESET_ID>", Description = "The ruleset(s) to compute difficulty for.\n"
+        [Option(CommandOptionType.MultipleValue, Template = "-m|--mode <RULESET_ID>", Description = "Ruleset(s) to compute difficulty for.\n"
                                                                                                     + "0 - osu!\n"
                                                                                                     + "1 - osu!taiko\n"
                                                                                                     + "2 - osu!catch\n"
@@ -33,25 +33,39 @@ namespace osu.Server.DifficultyCalculator.Commands
         [Option(CommandOptionType.NoValue, Template = "-ac|--allow-converts", Description = "Attempt to convert beatmaps to other rulesets to calculate difficulty.")]
         public bool Converts { get; set; } = false;
 
-        [Option(CommandOptionType.SingleValue, Template = "-c|--concurrency", Description = "The number of threads to use. Default 1.")]
+        [Option(CommandOptionType.SingleValue, Template = "-c|--concurrency", Description = "Number of threads to use. Default 1.")]
         public int Concurrency { get; set; } = 1;
-
-        [Option(CommandOptionType.NoValue, Template = "-v|--verbose", Description = "Provide verbose console output.")]
-        public bool Verbose { get; set; }
 
         [Option(CommandOptionType.NoValue, Template = "-d|--force-download", Description = "Force download of all beatmaps.")]
         public bool ForceDownload { get; set; }
 
+        [Option(CommandOptionType.NoValue, Template = "-v|--verbose", Description = "Provide verbose console output.")]
+        public bool Verbose { get; set; }
+
+        [Option(CommandOptionType.NoValue, Template = "-q|--quiet", Description = "Disable all console output.")]
+        public bool Quiet { get; set; }
+
+        [Option(CommandOptionType.SingleValue, Template = "-l|--log-file", Description = "The file to log output to.")]
+        public string LogFile { get; set; }
+
         protected virtual Database Database { get; private set; }
+
+        private IReporter reporter;
 
         private int totalBeatmaps;
         private int processedBeatmaps;
 
         public void OnExecute(CommandLineApplication app, IConsole console)
         {
+            reporter = new Reporter(console, LogFile)
+            {
+                IsQuiet = Quiet,
+                IsVerbose = Verbose
+            };
+
             if (Concurrency < 1)
             {
-                console.Error.WriteLine("Concurrency level must be above 1.");
+                reporter.Error("Concurrency level must be above 1.");
                 return;
             }
 
@@ -72,12 +86,12 @@ namespace osu.Server.DifficultyCalculator.Commands
                 });
             }
 
-            Console.WriteLine($"Processing {totalBeatmaps} beatmaps.");
+            reporter.Output($"Processing {totalBeatmaps} beatmaps.");
 
             using (new Timer(_ => outputProgress(), null, 1000, 1000))
                 Task.WaitAll(tasks);
 
-            Console.WriteLine("Done.");
+            reporter.Output("Done.");
         }
 
         private void processBeatmap(int beatmapId, List<Ruleset> rulesets)
@@ -87,8 +101,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                 var localBeatmap = BeatmapLoader.GetBeatmap(beatmapId, Verbose, ForceDownload);
                 if (localBeatmap == null)
                 {
-                    if (Verbose)
-                        Console.WriteLine($"Beatmap {beatmapId} skipped (beatmap file not found).");
+                    reporter.Warn($"Beatmap {beatmapId} skipped (beatmap file not found).");
                     return;
                 }
 
@@ -103,12 +116,11 @@ namespace osu.Server.DifficultyCalculator.Commands
                         computeDifficulty(beatmapId, localBeatmap, localBeatmap.BeatmapInfo.Ruleset.CreateInstance(), conn);
                 }
 
-                if (Verbose)
-                    Console.WriteLine($"Difficulty updated for beatmap {beatmapId}.");
+                reporter.Verbose($"Difficulty updated for beatmap {beatmapId}.");
             }
             catch (Exception e)
             {
-                Console.WriteLine($"{beatmapId} failed with: {e}");
+                reporter.Error($"{beatmapId} failed with: {e}");
             }
 
             Interlocked.Increment(ref processedBeatmaps);
@@ -184,7 +196,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                 }
                 catch
                 {
-                    Console.Error.WriteLine("Failed to load ruleset");
+                    reporter.Error($"Failed to load ruleset ({file})");
                 }
             }
 
@@ -194,7 +206,7 @@ namespace osu.Server.DifficultyCalculator.Commands
             return rulesetsToProcess;
         }
 
-        private void outputProgress() => Console.WriteLine($"Processed {processedBeatmaps} / {totalBeatmaps}");
+        private void outputProgress() => reporter.Output($"Processed {processedBeatmaps} / {totalBeatmaps}");
 
         protected string CombineSqlConditions(params string[] conditions)
         {
