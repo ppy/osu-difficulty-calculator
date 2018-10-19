@@ -73,6 +73,28 @@ namespace osu.Server.DifficultyCalculator.Commands
             MasterDatabase = new Database(AppSettings.ConnectionStringMaster);
             SlaveDatabase = new Database(AppSettings.ConnectionStringSlave ?? AppSettings.ConnectionStringMaster);
 
+            if (AppSettings.UseDocker)
+            {
+                reporter.Output("Waiting for database...");
+
+                while (true)
+                {
+                    try
+                    {
+                        using (var conn = MasterDatabase.GetConnection())
+                        {
+                            if (conn.QuerySingle<int>("SELECT count FROM osu_counts WHERE name='docker_db_step'") == 1)
+                                break;
+                        }
+                    }
+                    catch
+                    {
+                    }
+
+                    Thread.Sleep(1000);
+                }
+            }
+
             var rulesetsToProcess = getRulesets();
             var beatmaps = new ConcurrentQueue<int>(GetBeatmaps());
 
@@ -92,6 +114,12 @@ namespace osu.Server.DifficultyCalculator.Commands
 
             using (new Timer(_ => outputProgress(), null, 1000, 1000))
                 Task.WaitAll(tasks);
+
+            if (AppSettings.UseDocker)
+            {
+                using (var conn = MasterDatabase.GetConnection())
+                    conn.Execute("UPDATE osu_counts SET docker_db_step=@Value", new { Value = 2 });
+            }
 
             reporter.Output("Done.");
         }
