@@ -118,7 +118,7 @@ namespace osu.Server.DifficultyCalculator.Commands
             if (AppSettings.UseDocker)
             {
                 using (var conn = MasterDatabase.GetConnection())
-                    conn.Execute("UPDATE osu_counts SET docker_db_step=@Value", new { Value = 2 });
+                    conn.Execute("UPDATE osu_counts SET count=@Value WHERE name=docker_db_step", new { Value = 2 });
             }
 
             reporter.Output("Done.");
