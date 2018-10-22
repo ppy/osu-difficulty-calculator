@@ -83,7 +83,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                     {
                         using (var conn = MasterDatabase.GetConnection())
                         {
-                            if (conn.QuerySingle<int>("SELECT count FROM osu_counts WHERE name='docker_db_step'") == 1)
+                            if (conn.QuerySingle<int>("SELECT `count` FROM `osu_counts` WHERE `name`='docker_db_step'") == 1)
                                 break;
                         }
                     }
@@ -118,7 +118,7 @@ namespace osu.Server.DifficultyCalculator.Commands
             if (AppSettings.UseDocker)
             {
                 using (var conn = MasterDatabase.GetConnection())
-                    conn.Execute("UPDATE osu_counts SET count=@Value WHERE name=docker_db_step", new { Value = 2 });
+                    conn.Execute("UPDATE `osu_counts` SET `count`=@Value WHERE `name`='docker_db_step'", new { Value = 2 });
             }
 
             reporter.Output("Done.");
@@ -163,9 +163,9 @@ namespace osu.Server.DifficultyCalculator.Commands
                 var legacyMod = attribute.Mods.ToLegacy();
 
                 conn.Execute(
-                    "INSERT INTO osu_beatmap_difficulty (beatmap_id, mode, mods, diff_unified) "
+                    "INSERT INTO `osu_beatmap_difficulty` (`beatmap_id`, `mode`, `mods`, `diff_unified`) "
                     + "VALUES (@BeatmapId, @Mode, @Mods, @Diff) "
-                    + "ON DUPLICATE KEY UPDATE diff_unified = @Diff",
+                    + "ON DUPLICATE KEY UPDATE `diff_unified` = @Diff",
                     new
                     {
                         BeatmapId = beatmapId,
@@ -188,16 +188,16 @@ namespace osu.Server.DifficultyCalculator.Commands
                 }
 
                 conn.Execute(
-                    "INSERT INTO osu_beatmap_difficulty_attribs (beatmap_id, mode, mods, attrib_id, value) "
+                    "INSERT INTO `osu_beatmap_difficulty_attribs` (`beatmap_id`, `mode`, `mods`, `attrib_id`, `value`) "
                     + "VALUES (@BeatmapId, @Mode, @Mods, @Attribute, @Value) "
-                    + "ON DUPLICATE KEY UPDATE value = VALUES(value)",
+                    + "ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
                     parameters.ToArray());
 
                 if (legacyMod == LegacyMods.None && ruleset.RulesetInfo.Equals(beatmap.BeatmapInfo.Ruleset))
                 {
                     conn.Execute(
-                        "UPDATE osu_beatmaps SET difficultyrating=@Diff, diff_approach=@AR, diff_overall=@OD, diff_drain=@HP, diff_size=@CS "
-                        + "WHERE beatmap_id=@BeatmapId",
+                        "UPDATE `osu_beatmaps` SET `difficultyrating`=@Diff, `diff_approach`=@AR, `diff_overall`=@OD, `diff_drain`=@HP, `diff_size`=@CS "
+                        + "WHERE `beatmap_id`=@BeatmapId",
                         new
                         {
                             BeatmapId = beatmapId,
