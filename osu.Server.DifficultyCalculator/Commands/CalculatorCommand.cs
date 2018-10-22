@@ -121,7 +121,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                 {
                     conn.Execute("INSERT INTO `osu_counts` (`name`, `count`) VALUES (@Name, @Count) ON DUPLICATE KEY UPDATE `count` = @Count", new
                     {
-                        Name = "db_docker_step",
+                        Name = "docker_db_step",
                         Count = 2
                     });
                 }
