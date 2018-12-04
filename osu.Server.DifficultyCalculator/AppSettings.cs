@@ -17,6 +17,8 @@ namespace osu.Server.DifficultyCalculator
         public static bool AllowDownload { get; }
         public static string DownloadPath { get; }
 
+        public static bool UseDocker { get; }
+
         static AppSettings()
         {
             var env = Environment.GetEnvironmentVariable("APP_ENV") ?? "development";
@@ -34,6 +36,8 @@ namespace osu.Server.DifficultyCalculator
 
             AllowDownload = bool.Parse(config["allow_download"]);
             DownloadPath = config["download_path"];
+
+            UseDocker = Environment.GetEnvironmentVariable("DOCKER")?.Contains("1") ?? false;
         }
     }
 }

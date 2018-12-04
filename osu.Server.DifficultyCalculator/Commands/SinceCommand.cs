@@ -21,11 +21,11 @@ namespace osu.Server.DifficultyCalculator.Commands
             using (var conn = SlaveDatabase.GetConnection())
             {
                 var condition = CombineSqlConditions(
-                    RankedOnly ? "approved >= 1" : null,
-                    $"beatmap_id >= {Marker}"
+                    RankedOnly ? "`approved` >= 1" : null,
+                    $"`beatmap_id` >= {Marker}"
                 );
 
-                return conn.Query<int>($"SELECT beatmap_id FROM osu_beatmaps {condition}");
+                return conn.Query<int>($"SELECT `beatmap_id` FROM `osu_beatmaps` {condition}");
             }
         }
     }
