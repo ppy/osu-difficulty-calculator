@@ -83,7 +83,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                     {
                         using (var conn = MasterDatabase.GetConnection())
                         {
-                            if (conn.QuerySingle<int>("SELECT `count` FROM `osu_counts` WHERE `name`='docker_db_step'") == 1)
+                            if (conn.QuerySingle<int>("SELECT `count` FROM `osu_counts` WHERE `name` = 'docker_db_step'") == 1)
                                 break;
                         }
                     }
@@ -202,8 +202,8 @@ namespace osu.Server.DifficultyCalculator.Commands
                 if (legacyMod == LegacyMods.None && ruleset.RulesetInfo.Equals(beatmap.BeatmapInfo.Ruleset))
                 {
                     conn.Execute(
-                        "UPDATE `osu_beatmaps` SET `difficultyrating`=@Diff, `diff_approach`=@AR, `diff_overall`=@OD, `diff_drain`=@HP, `diff_size`=@CS "
-                        + "WHERE `beatmap_id`=@BeatmapId",
+                        "UPDATE `osu_beatmaps` SET `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS "
+                        + "WHERE `beatmap_id`= @BeatmapId",
                         new
                         {
                             BeatmapId = beatmapId,
