@@ -83,7 +83,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                     {
                         using (var conn = MasterDatabase.GetConnection())
                         {
-                            if (conn.QuerySingle<int>("SELECT `count` FROM `osu_counts` WHERE `name` = 'docker_db_step'") == 1)
+                            if (conn.QuerySingle<int>("SELECT `count` FROM `osu_counts` WHERE `name` = 'docker_db_step'") >= 1)
                                 break;
                         }
                     }
