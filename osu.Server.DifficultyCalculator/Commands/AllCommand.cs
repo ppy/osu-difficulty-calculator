@@ -7,7 +7,7 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace osu.Server.DifficultyCalculator.Commands
 {
-    [Command(Name = "all", Description = "Calculates the difficulty of all beatmaps.")]
+    [Command(Name = "all", Description = "Calculates the difficulty of all beatmaps in the database.")]
     public class AllCommand : CalculatorCommand
     {
         [Option(CommandOptionType.NoValue, Template = "-r|--ranked", Description = "Only calculate difficulty for ranked/approved/qualified/loved maps.")]
