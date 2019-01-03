@@ -18,7 +18,7 @@ namespace osu.Server.DifficultyCalculator.Commands
 
         protected override IEnumerable<int> GetBeatmaps()
         {
-            using (var conn = SlaveDatabase.GetConnection())
+            return SlaveDatabase.Perform(conn =>
             {
                 var condition = CombineSqlConditions(
                     RankedOnly ? "`approved` >= 1" : null,
@@ -26,7 +26,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                 );
 
                 return conn.Query<int>($"SELECT `beatmap_id` FROM `osu_beatmaps` {condition}");
-            }
+            });
         }
     }
 }
