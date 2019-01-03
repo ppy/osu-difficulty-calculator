@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -11,6 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
+using Humanizer;
 using McMaster.Extensions.CommandLineUtils;
 using MySql.Data.MySqlClient;
 using osu.Game.Beatmaps;
@@ -50,6 +52,8 @@ namespace osu.Server.DifficultyCalculator.Commands
 
         protected Database MasterDatabase { get; private set; }
         protected Database SlaveDatabase { get; private set; }
+
+        private readonly Process process = Process.GetCurrentProcess();
 
         private IReporter reporter;
 
@@ -113,6 +117,7 @@ namespace osu.Server.DifficultyCalculator.Commands
             reporter.Output($"Processing {totalBeatmaps} beatmaps.");
 
             using (new Timer(_ => outputProgress(), null, 1000, 1000))
+            using (new Timer(_ => outputHealth(), null, 5000, 5000))
                 Task.WaitAll(tasks);
 
             if (AppSettings.UseDocker)
@@ -230,7 +235,6 @@ namespace osu.Server.DifficultyCalculator.Commands
                     var assembly = Assembly.LoadFrom(file);
                     Type type = assembly.GetTypes().First(t => t.IsPublic && t.IsSubclassOf(typeof(Ruleset)));
                     rulesetsToProcess.Add((Ruleset)Activator.CreateInstance(type, (RulesetInfo)null));
-
                 }
                 catch
                 {
@@ -245,6 +249,8 @@ namespace osu.Server.DifficultyCalculator.Commands
         }
 
         private void outputProgress() => reporter.Output($"Processed {processedBeatmaps} / {totalBeatmaps}");
+
+        private void outputHealth() => reporter.Verbose($"Health p:{process.PrivateMemorySize64.Bytes()}, v:{process.VirtualMemorySize64.Bytes()}, w:{process.WorkingSet64.Bytes()}");
 
         protected string CombineSqlConditions(params string[] conditions)
         {
