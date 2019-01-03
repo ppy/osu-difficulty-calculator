@@ -53,8 +53,6 @@ namespace osu.Server.DifficultyCalculator.Commands
         protected Database MasterDatabase { get; private set; }
         protected Database SlaveDatabase { get; private set; }
 
-        private readonly Process process = Process.GetCurrentProcess();
-
         private IReporter reporter;
 
         private int totalBeatmaps;
@@ -250,7 +248,11 @@ namespace osu.Server.DifficultyCalculator.Commands
 
         private void outputProgress() => reporter.Output($"Processed {processedBeatmaps} / {totalBeatmaps}");
 
-        private void outputHealth() => reporter.Verbose($"Health p:{process.PrivateMemorySize64.Bytes()}, v:{process.VirtualMemorySize64.Bytes()}, w:{process.WorkingSet64.Bytes()}");
+        private void outputHealth()
+        {
+            var process = Process.GetCurrentProcess();
+            reporter.Verbose($"Health p:{process.PrivateMemorySize64.Bytes()}, v:{process.VirtualMemorySize64.Bytes()}, w:{process.WorkingSet64.Bytes()}");
+        }
 
         protected string CombineSqlConditions(params string[] conditions)
         {
