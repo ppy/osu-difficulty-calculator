@@ -53,6 +53,8 @@ namespace osu.Server.DifficultyCalculator.Commands
         protected Database MasterDatabase { get; private set; }
         protected Database SlaveDatabase { get; private set; }
 
+        private int[] threadBeatmapIds;
+
         private IReporter reporter;
 
         private int totalBeatmaps;
@@ -71,6 +73,8 @@ namespace osu.Server.DifficultyCalculator.Commands
                 reporter.Error("Concurrency level must be above 1.");
                 return;
             }
+
+            threadBeatmapIds = new int[Concurrency];
 
             MasterDatabase = new Database(AppSettings.ConnectionStringMaster);
             SlaveDatabase = new Database(AppSettings.ConnectionStringSlave ?? AppSettings.ConnectionStringMaster);
@@ -105,10 +109,15 @@ namespace osu.Server.DifficultyCalculator.Commands
             var tasks = new Task[Concurrency];
             for (int i = 0; i < Concurrency; i++)
             {
+                int tmp = i;
+
                 tasks[i] = Task.Factory.StartNew(() =>
                 {
                     while (beatmaps.TryDequeue(out int toProcess))
+                    {
+                        threadBeatmapIds[tmp] = toProcess;
                         processBeatmap(toProcess, rulesetsToProcess);
+                    }
                 });
             }
 
