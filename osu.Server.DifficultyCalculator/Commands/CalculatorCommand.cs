@@ -246,7 +246,14 @@ namespace osu.Server.DifficultyCalculator.Commands
             return rulesetsToProcess;
         }
 
-        private void outputProgress() => reporter.Output($"Processed {processedBeatmaps} / {totalBeatmaps}");
+        private int lastProgress;
+
+        private void outputProgress()
+        {
+            int processed = processedBeatmaps;
+            reporter.Output($"Processed {processed} / {totalBeatmaps} ({processed - lastProgress}/sec)");
+            lastProgress = processed;
+        }
 
         private void outputHealth()
         {
