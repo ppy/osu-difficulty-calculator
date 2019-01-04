@@ -5,6 +5,7 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <AssemblyName>osu.Server.DifficultyCalculator</AssemblyName>
     <RootNamespace>osu.Server.DifficultyCalculator</RootNamespace>
+    <LangVersion>7.1</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Dapper" Version="1.50.5" />
