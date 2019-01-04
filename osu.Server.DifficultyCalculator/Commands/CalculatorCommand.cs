@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -11,6 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
+using Humanizer;
 using McMaster.Extensions.CommandLineUtils;
 using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Legacy;
@@ -50,6 +52,8 @@ namespace osu.Server.DifficultyCalculator.Commands
         protected Database MasterDatabase { get; private set; }
         protected Database SlaveDatabase { get; private set; }
 
+        private int[] threadBeatmapIds;
+
         private IReporter reporter;
 
         private int totalBeatmaps;
@@ -68,6 +72,8 @@ namespace osu.Server.DifficultyCalculator.Commands
                 reporter.Error("Concurrency level must be above 1.");
                 return;
             }
+
+            threadBeatmapIds = new int[Concurrency];
 
             MasterDatabase = new Database(AppSettings.ConnectionStringMaster);
             SlaveDatabase = new Database(AppSettings.ConnectionStringSlave ?? AppSettings.ConnectionStringMaster);
@@ -107,16 +113,22 @@ namespace osu.Server.DifficultyCalculator.Commands
             var tasks = new Task[Concurrency];
             for (int i = 0; i < Concurrency; i++)
             {
+                int tmp = i;
+
                 tasks[i] = Task.Factory.StartNew(() =>
                 {
                     while (beatmaps.TryDequeue(out int toProcess))
+                    {
+                        threadBeatmapIds[tmp] = toProcess;
                         processBeatmap(toProcess, rulesetsToProcess);
+                    }
                 });
             }
 
             reporter.Output($"Processing {totalBeatmaps} beatmaps.");
 
             using (new Timer(_ => outputProgress(), null, 1000, 1000))
+            using (new Timer(_ => outputHealth(), null, 5000, 5000))
                 Task.WaitAll(tasks);
 
             if (AppSettings.UseDocker)
@@ -138,6 +150,8 @@ namespace osu.Server.DifficultyCalculator.Commands
         {
             try
             {
+                reporter.Verbose($"Processing difficulty for beatmap {beatmapId}.");
+
                 var localBeatmap = BeatmapLoader.GetBeatmap(beatmapId, Verbose, ForceDownload);
                 if (localBeatmap == null)
                 {
@@ -242,7 +256,6 @@ namespace osu.Server.DifficultyCalculator.Commands
                     var assembly = Assembly.LoadFrom(file);
                     Type type = assembly.GetTypes().First(t => t.IsPublic && t.IsSubclassOf(typeof(Ruleset)));
                     rulesetsToProcess.Add((Ruleset)Activator.CreateInstance(type, (RulesetInfo)null));
-
                 }
                 catch
                 {
@@ -256,7 +269,26 @@ namespace osu.Server.DifficultyCalculator.Commands
             return rulesetsToProcess;
         }
 
-        private void outputProgress() => reporter.Output($"Processed {processedBeatmaps} / {totalBeatmaps}");
+        private int lastProgress;
+
+        private void outputProgress()
+        {
+            int processed = processedBeatmaps;
+            reporter.Output($"Processed {processed} / {totalBeatmaps} ({processed - lastProgress}/sec)");
+            lastProgress = processed;
+        }
+
+        private void outputHealth()
+        {
+            var process = Process.GetCurrentProcess();
+            reporter.Verbose($"Health p:{process.PrivateMemorySize64.Bytes()} v:{process.VirtualMemorySize64.Bytes()} w:{process.WorkingSet64.Bytes()}");
+
+            string threadsString = string.Empty;
+            for (int i = 0; i < threadBeatmapIds.Length; i++)
+                threadsString += $"{i}:{threadBeatmapIds[i]} ";
+
+            reporter.Verbose($"Threads {threadsString}");
+        }
 
         protected string CombineSqlConditions(params string[] conditions)
         {
