@@ -14,6 +14,8 @@ namespace osu.Server.DifficultyCalculator
 
         public static bool UseDatabase { get; }
 
+        public static bool InsertBeatmaps { get; }
+
         public static string BeatmapsPath { get; }
 
         public static bool AllowDownload { get; }
@@ -35,6 +37,7 @@ namespace osu.Server.DifficultyCalculator
             ConnectionStringSlave = config.GetConnectionString("slave");
 
             UseDatabase = bool.Parse(config["use_database"]);
+            InsertBeatmaps = bool.Parse(config["insert_beatmaps"]);
 
             BeatmapsPath = config["beatmaps_path"];
 

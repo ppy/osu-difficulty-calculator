@@ -230,19 +230,31 @@ namespace osu.Server.DifficultyCalculator.Commands
                 {
                     context.Perform(conn =>
                     {
-                        conn.Execute(
-                            "INSERT INTO `osu_beatmaps` (`beatmap_id`, `difficultyrating`, `diff_approach`, `diff_overall`, `diff_drain`, `diff_size`) "
-                            + "VALUES (@BeatmapId, @Diff, @AR, @OD, @HP, @CS) "
-                            + "ON DUPLICATE KEY UPDATE `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS",
-                            new
-                            {
-                                BeatmapId = beatmapId,
-                                Diff = attribute.StarRating,
-                                AR = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.ApproachRate,
-                                OD = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty,
-                                HP = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.DrainRate,
-                                CS = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize
-                            });
+                        object param = new
+                        {
+                            BeatmapId = beatmapId,
+                            Diff = attribute.StarRating,
+                            AR = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.ApproachRate,
+                            OD = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty,
+                            HP = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.DrainRate,
+                            CS = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize
+                        };
+
+                        if (AppSettings.InsertBeatmaps)
+                        {
+                            conn.Execute(
+                                "INSERT INTO `osu_beatmaps` (`beatmap_id`, `difficultyrating`, `diff_approach`, `diff_overall`, `diff_drain`, `diff_size`) "
+                                + "VALUES (@BeatmapId, @Diff, @AR, @OD, @HP, @CS) "
+                                + "ON DUPLICATE KEY UPDATE `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS",
+                                param);
+                        }
+                        else
+                        {
+                            conn.Execute(
+                                "UPDATE `osu_beatmaps` SET `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS "
+                                + "WHERE `beatmap_id`= @BeatmapId",
+                                param);
+                        }
                     });
                 }
             }
