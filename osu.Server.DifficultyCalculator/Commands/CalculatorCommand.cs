@@ -143,6 +143,8 @@ namespace osu.Server.DifficultyCalculator.Commands
                 });
             }
 
+            outputProgress();
+
             reporter.Output("Done.");
         }
 
