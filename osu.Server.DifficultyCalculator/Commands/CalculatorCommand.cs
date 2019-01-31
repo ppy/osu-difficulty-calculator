@@ -157,7 +157,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                 var localBeatmap = BeatmapLoader.GetBeatmap(beatmapId, Verbose, ForceDownload);
                 if (localBeatmap == null)
                 {
-                    reporter.Warn($"Beatmap {beatmapId} skipped (beatmap file not found).");
+                    reporter.Error($"Beatmap {beatmapId} skipped (beatmap file not found).");
                     return;
                 }
 
