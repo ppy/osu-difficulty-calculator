@@ -32,7 +32,7 @@ namespace osu.Server.DifficultyCalculator
             {
                 try
                 {
-                    fileWriter = new StreamWriter(new FileStream(file, FileMode.Create, FileAccess.Write, FileShare.Read));
+                    fileWriter = new StreamWriter(file);
                 }
                 catch (Exception e)
                 {
@@ -41,7 +41,7 @@ namespace osu.Server.DifficultyCalculator
                 }
             }
 
-            errorFileWriter = new StreamWriter(new FileStream("error.log", FileMode.Append, FileAccess.Write, FileShare.Read));
+            errorFileWriter = new StreamWriter("error.log", true) { AutoFlush = true };
         }
 
         private void writeLine(TextWriter consoleWriter, string message, ConsoleColor? foregroundColour = null)
