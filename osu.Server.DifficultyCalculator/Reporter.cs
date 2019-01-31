@@ -22,6 +22,7 @@ namespace osu.Server.DifficultyCalculator
         private readonly object _writeLock = new object();
         private readonly IConsole console;
         private readonly StreamWriter fileWriter;
+        private readonly StreamWriter errorFileWriter;
 
         public Reporter(IConsole console, string file = null)
         {
@@ -31,7 +32,7 @@ namespace osu.Server.DifficultyCalculator
             {
                 try
                 {
-                    fileWriter = new StreamWriter(new FileStream(file, FileMode.Create, FileAccess.Write, FileShare.Read));
+                    fileWriter = new StreamWriter(file);
                 }
                 catch (Exception e)
                 {
@@ -39,6 +40,8 @@ namespace osu.Server.DifficultyCalculator
                     Warn("Continuing without log file.");
                 }
             }
+
+            errorFileWriter = new StreamWriter("error.log", true) { AutoFlush = true };
         }
 
         private void writeLine(TextWriter consoleWriter, string message, ConsoleColor? foregroundColour = null)
@@ -53,6 +56,9 @@ namespace osu.Server.DifficultyCalculator
                 if (!IsQuiet)
                     consoleWriter.WriteLine(line);
                 fileWriter?.WriteLine(line);
+
+                if (consoleWriter == console.Error)
+                    errorFileWriter.WriteLine(line);
 
                 if (foregroundColour.HasValue)
                     Console.ResetColor();
