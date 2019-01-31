@@ -2,6 +2,7 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System.Collections.Generic;
+using System.Linq;
 using Dapper;
 using McMaster.Extensions.CommandLineUtils;
 
@@ -18,15 +19,18 @@ namespace osu.Server.DifficultyCalculator.Commands
 
         protected override IEnumerable<int> GetBeatmaps()
         {
-            return SlaveDatabase.Perform(conn =>
+            using (var conn = Database.GetSlaveConnection())
             {
+                if (conn == null)
+                    return Enumerable.Empty<int>();
+
                 var condition = CombineSqlConditions(
                     RankedOnly ? "`approved` >= 1" : null,
                     $"`beatmap_id` >= {Marker}"
                 );
 
                 return conn.Query<int>($"SELECT `beatmap_id` FROM `osu_beatmaps` {condition}");
-            });
+            }
         }
     }
 }

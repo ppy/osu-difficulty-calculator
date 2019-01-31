@@ -2,7 +2,6 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
-using System.IO;
 using Microsoft.Extensions.Configuration;
 
 namespace osu.Server.DifficultyCalculator
@@ -11,8 +10,6 @@ namespace osu.Server.DifficultyCalculator
     {
         public static string ConnectionStringMaster { get; }
         public static string ConnectionStringSlave { get; }
-
-        public static bool UseDatabase { get; }
 
         public static bool InsertBeatmaps { get; }
 
@@ -27,7 +24,6 @@ namespace osu.Server.DifficultyCalculator
         {
             var env = Environment.GetEnvironmentVariable("APP_ENV") ?? "development";
             var config = new ConfigurationBuilder()
-                         .SetBasePath(Directory.GetCurrentDirectory())
                          .AddJsonFile("appsettings.json", true, false)
                          .AddJsonFile($"appsettings.{env}.json", true, false)
                          .AddEnvironmentVariables()
@@ -36,7 +32,6 @@ namespace osu.Server.DifficultyCalculator
             ConnectionStringMaster = config.GetConnectionString("master");
             ConnectionStringSlave = config.GetConnectionString("slave");
 
-            UseDatabase = bool.Parse(config["use_database"]);
             InsertBeatmaps = bool.Parse(config["insert_beatmaps"]);
 
             BeatmapsPath = config["beatmaps_path"];
