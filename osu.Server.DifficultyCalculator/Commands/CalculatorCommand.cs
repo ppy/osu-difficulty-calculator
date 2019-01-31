@@ -157,6 +157,15 @@ namespace osu.Server.DifficultyCalculator.Commands
                     return;
                 }
 
+                if (localBeatmap.Beatmap.HitObjects.Count == 0)
+                {
+                    using (var conn = Database.GetSlaveConnection())
+                    {
+                        if (conn?.QuerySingleOrDefault<int>("SELECT `approved` FROM `osu_beatmaps` WHERE `beatmap_id` = @BeatmapId", new { BeatmapId = beatmapId }) > 0)
+                            reporter.Error($"Ranked beatmap {beatmapId} has 0 hitobjects!");
+                    }
+                }
+
                 using (var conn = Database.GetConnection())
                 {
                     if (Converts && localBeatmap.BeatmapInfo.RulesetID == 0)
@@ -247,7 +256,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                         {
                             conn?.Execute(
                                 "UPDATE `osu_beatmaps` SET `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS "
-                                + "WHERE `beatmap_id`= @BeatmapId",
+                                + "WHERE `beatmap_id` = @BeatmapId",
                                 param);
                         }
                     }
