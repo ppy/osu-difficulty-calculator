@@ -11,7 +11,7 @@ namespace osu.Server.DifficultyCalculator
         public static string ConnectionStringMaster { get; }
         public static string ConnectionStringSlave { get; }
 
-        public static bool UseDatabase { get; }
+        public static bool ReadOnly { get; }
 
         public static bool InsertBeatmaps { get; }
 
@@ -34,7 +34,7 @@ namespace osu.Server.DifficultyCalculator
             ConnectionStringMaster = config.GetConnectionString("master");
             ConnectionStringSlave = config.GetConnectionString("slave");
 
-            UseDatabase = bool.Parse(config["use_database"]);
+            ReadOnly = bool.Parse(config["read_only"]);
             InsertBeatmaps = bool.Parse(config["insert_beatmaps"]);
 
             BeatmapsPath = config["beatmaps_path"];
