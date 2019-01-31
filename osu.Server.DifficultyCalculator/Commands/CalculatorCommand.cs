@@ -50,6 +50,9 @@ namespace osu.Server.DifficultyCalculator.Commands
         [Option(CommandOptionType.SingleValue, Template = "-l|--log-file", Description = "The file to log output to.")]
         public string LogFile { get; set; }
 
+        [Option(CommandOptionType.NoValue, Template = "-dr|--dry-run", Description = "Don't perform any writes to the database.")]
+        public bool DryRun { get; set; }
+
         private int[] threadBeatmapIds;
 
         private IReporter reporter;
@@ -181,7 +184,7 @@ namespace osu.Server.DifficultyCalculator.Commands
             {
                 var legacyMod = attribute.Mods.ToLegacy();
 
-                if (!AppSettings.ReadOnly)
+                if (!DryRun)
                 {
                     conn?.Execute(
                         "INSERT INTO `osu_beatmap_difficulty` (`beatmap_id`, `mode`, `mods`, `diff_unified`) "
@@ -209,7 +212,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                     });
                 }
 
-                if (!AppSettings.ReadOnly)
+                if (!DryRun)
                 {
                     conn?.Execute(
                         "INSERT INTO `osu_beatmap_difficulty_attribs` (`beatmap_id`, `mode`, `mods`, `attrib_id`, `value`) "
@@ -230,7 +233,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                         CS = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize
                     };
 
-                    if (!AppSettings.ReadOnly)
+                    if (!DryRun)
                     {
                         if (AppSettings.InsertBeatmaps)
                         {
