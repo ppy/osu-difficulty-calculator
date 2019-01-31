@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Dapper;
 using Humanizer;
 using McMaster.Extensions.CommandLineUtils;
+using MySql.Data.MySqlClient;
 using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Legacy;
 using osu.Game.Rulesets;
@@ -49,9 +50,6 @@ namespace osu.Server.DifficultyCalculator.Commands
         [Option(CommandOptionType.SingleValue, Template = "-l|--log-file", Description = "The file to log output to.")]
         public string LogFile { get; set; }
 
-        protected Database MasterDatabase { get; private set; }
-        protected Database SlaveDatabase { get; private set; }
-
         private int[] threadBeatmapIds;
 
         private IReporter reporter;
@@ -75,9 +73,6 @@ namespace osu.Server.DifficultyCalculator.Commands
 
             threadBeatmapIds = new int[Concurrency];
 
-            MasterDatabase = new Database(AppSettings.ConnectionStringMaster);
-            SlaveDatabase = new Database(AppSettings.ConnectionStringSlave ?? AppSettings.ConnectionStringMaster);
-
             if (AppSettings.UseDocker)
             {
                 reporter.Output("Waiting for database...");
@@ -88,11 +83,9 @@ namespace osu.Server.DifficultyCalculator.Commands
                     {
                         bool initialised = false;
 
-                        MasterDatabase.Perform(conn =>
-                        {
+                        using (var conn = Database.GetConnection())
                             if (conn.QuerySingle<int>("SELECT `count` FROM `osu_counts` WHERE `name` = 'docker_db_step'") >= 1)
                                 initialised = true;
-                        });
 
                         if (initialised)
                             break;
@@ -133,14 +126,14 @@ namespace osu.Server.DifficultyCalculator.Commands
 
             if (AppSettings.UseDocker)
             {
-                MasterDatabase.Perform(conn =>
+                using (var conn = Database.GetConnection())
                 {
                     conn.Execute("INSERT INTO `osu_counts` (`name`, `count`) VALUES (@Name, @Count) ON DUPLICATE KEY UPDATE `count` = @Count", new
                     {
                         Name = "docker_db_step",
                         Count = 2
                     });
-                });
+                }
             }
 
             outputProgress();
@@ -161,15 +154,15 @@ namespace osu.Server.DifficultyCalculator.Commands
                     return;
                 }
 
-                using (var context = MasterDatabase.GetContext())
+                using (var conn = Database.GetConnection())
                 {
                     if (Converts && localBeatmap.BeatmapInfo.RulesetID == 0)
                     {
                         foreach (var ruleset in rulesets)
-                            computeDifficulty(beatmapId, localBeatmap, ruleset, context);
+                            computeDifficulty(beatmapId, localBeatmap, ruleset, conn);
                     }
                     else if (rulesets.Any(r => r.RulesetInfo.ID == localBeatmap.BeatmapInfo.RulesetID))
-                        computeDifficulty(beatmapId, localBeatmap, localBeatmap.BeatmapInfo.Ruleset.CreateInstance(), context);
+                        computeDifficulty(beatmapId, localBeatmap, localBeatmap.BeatmapInfo.Ruleset.CreateInstance(), conn);
                 }
 
                 reporter.Verbose($"Difficulty updated for beatmap {beatmapId}.");
@@ -182,26 +175,23 @@ namespace osu.Server.DifficultyCalculator.Commands
             Interlocked.Increment(ref processedBeatmaps);
         }
 
-        private void computeDifficulty(int beatmapId, WorkingBeatmap beatmap, Ruleset ruleset, Database.Context context)
+        private void computeDifficulty(int beatmapId, WorkingBeatmap beatmap, Ruleset ruleset, MySqlConnection conn)
         {
             foreach (var attribute in ruleset.CreateDifficultyCalculator(beatmap).CalculateAll())
             {
                 var legacyMod = attribute.Mods.ToLegacy();
 
-                context.Perform(conn =>
-                {
-                    conn.Execute(
-                        "INSERT INTO `osu_beatmap_difficulty` (`beatmap_id`, `mode`, `mods`, `diff_unified`) "
-                        + "VALUES (@BeatmapId, @Mode, @Mods, @Diff) "
-                        + "ON DUPLICATE KEY UPDATE `diff_unified` = @Diff",
-                        new
-                        {
-                            BeatmapId = beatmapId,
-                            Mode = ruleset.RulesetInfo.ID,
-                            Mods = (int)legacyMod,
-                            Diff = attribute.StarRating
-                        });
-                });
+                conn?.Execute(
+                    "INSERT INTO `osu_beatmap_difficulty` (`beatmap_id`, `mode`, `mods`, `diff_unified`) "
+                    + "VALUES (@BeatmapId, @Mode, @Mods, @Diff) "
+                    + "ON DUPLICATE KEY UPDATE `diff_unified` = @Diff",
+                    new
+                    {
+                        BeatmapId = beatmapId,
+                        Mode = ruleset.RulesetInfo.ID,
+                        Mods = (int)legacyMod,
+                        Diff = attribute.StarRating
+                    });
 
                 var parameters = new List<object>();
                 foreach (var mapping in attribute.Map())
@@ -216,46 +206,39 @@ namespace osu.Server.DifficultyCalculator.Commands
                     });
                 }
 
-                context.Perform(conn =>
-                {
-                    conn.Execute(
-                        "INSERT INTO `osu_beatmap_difficulty_attribs` (`beatmap_id`, `mode`, `mods`, `attrib_id`, `value`) "
-                        + "VALUES (@BeatmapId, @Mode, @Mods, @Attribute, @Value) "
-                        + "ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
-                        parameters.ToArray());
-                });
-
+                conn?.Execute(
+                    "INSERT INTO `osu_beatmap_difficulty_attribs` (`beatmap_id`, `mode`, `mods`, `attrib_id`, `value`) "
+                    + "VALUES (@BeatmapId, @Mode, @Mods, @Attribute, @Value) "
+                    + "ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
+                    parameters.ToArray());
 
                 if (legacyMod == LegacyMods.None && ruleset.RulesetInfo.Equals(beatmap.BeatmapInfo.Ruleset))
                 {
-                    context.Perform(conn =>
+                    object param = new
                     {
-                        object param = new
-                        {
-                            BeatmapId = beatmapId,
-                            Diff = attribute.StarRating,
-                            AR = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.ApproachRate,
-                            OD = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty,
-                            HP = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.DrainRate,
-                            CS = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize
-                        };
+                        BeatmapId = beatmapId,
+                        Diff = attribute.StarRating,
+                        AR = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.ApproachRate,
+                        OD = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty,
+                        HP = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.DrainRate,
+                        CS = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize
+                    };
 
-                        if (AppSettings.InsertBeatmaps)
-                        {
-                            conn.Execute(
-                                "INSERT INTO `osu_beatmaps` (`beatmap_id`, `difficultyrating`, `diff_approach`, `diff_overall`, `diff_drain`, `diff_size`) "
-                                + "VALUES (@BeatmapId, @Diff, @AR, @OD, @HP, @CS) "
-                                + "ON DUPLICATE KEY UPDATE `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS",
-                                param);
-                        }
-                        else
-                        {
-                            conn.Execute(
-                                "UPDATE `osu_beatmaps` SET `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS "
-                                + "WHERE `beatmap_id`= @BeatmapId",
-                                param);
-                        }
-                    });
+                    if (AppSettings.InsertBeatmaps)
+                    {
+                        conn?.Execute(
+                            "INSERT INTO `osu_beatmaps` (`beatmap_id`, `difficultyrating`, `diff_approach`, `diff_overall`, `diff_drain`, `diff_size`) "
+                            + "VALUES (@BeatmapId, @Diff, @AR, @OD, @HP, @CS) "
+                            + "ON DUPLICATE KEY UPDATE `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS",
+                            param);
+                    }
+                    else
+                    {
+                        conn?.Execute(
+                            "UPDATE `osu_beatmaps` SET `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS "
+                            + "WHERE `beatmap_id`= @BeatmapId",
+                            param);
+                    }
                 }
             }
         }
