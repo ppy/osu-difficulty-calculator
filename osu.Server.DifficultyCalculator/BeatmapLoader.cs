@@ -1,8 +1,8 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using System;
 using System.IO;
+using McMaster.Extensions.CommandLineUtils;
 using osu.Framework.Audio.Track;
 using osu.Framework.Graphics.Textures;
 using osu.Framework.IO.Network;
@@ -17,30 +17,32 @@ namespace osu.Server.DifficultyCalculator
 {
     public static class BeatmapLoader
     {
-        public static WorkingBeatmap GetBeatmap(int beatmapId, bool verbose, bool forceDownload)
+        public static WorkingBeatmap GetBeatmap(int beatmapId, bool verbose, bool forceDownload, IReporter reporter)
         {
             string fileLocation = Path.Combine(AppSettings.BeatmapsPath, beatmapId.ToString()) + ".osu";
 
             if ((forceDownload || !File.Exists(fileLocation)) && AppSettings.AllowDownload)
             {
                 if (verbose)
-                    Console.WriteLine($"Downloading {beatmapId}.");
+                    reporter.Verbose($"Downloading {beatmapId}.");
 
-                var req = new FileWebRequest(fileLocation, string.Format(AppSettings.DownloadPath, beatmapId));
+                var req = new WebRequest(string.Format(AppSettings.DownloadPath, beatmapId));
 
                 req.Failed += _ =>
                 {
                     if (verbose)
-                        Console.WriteLine($"Failed to download {beatmapId}.");
+                        reporter.Error($"Failed to download {beatmapId}.");
                 };
 
                 req.Finished += () =>
                 {
                     if (verbose)
-                        Console.WriteLine($"{beatmapId} successfully downloaded.");
+                        reporter.Verbose($"{beatmapId} successfully downloaded.");
                 };
 
                 req.Perform();
+
+                return req.ResponseStream != null ? new LoaderWorkingBeatmap(req.ResponseStream) : null;
             }
 
             return !File.Exists(fileLocation) ? null : new LoaderWorkingBeatmap(fileLocation);
@@ -59,7 +61,7 @@ namespace osu.Server.DifficultyCalculator
             {
             }
 
-            private LoaderWorkingBeatmap(Stream stream)
+            public LoaderWorkingBeatmap(Stream stream)
                 : this(new StreamReader(stream))
             {
                 stream.Dispose();
