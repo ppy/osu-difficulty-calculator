@@ -25,7 +25,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                     RankedOnly ? "`approved` >= 1" : null
                 );
 
-                return conn.Query<int>($"SELECT `beatmap_id` FROM `osu_beatmaps` {condition}");
+                return conn.Query<int>($"SELECT `beatmap_id` FROM `osu_beatmaps` {condition} WHERE `deleted_at` IS NULL");
             }
         }
     }

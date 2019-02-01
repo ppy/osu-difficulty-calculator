@@ -26,7 +26,8 @@ namespace osu.Server.DifficultyCalculator.Commands
 
                 var condition = CombineSqlConditions(
                     RankedOnly ? "`approved` >= 1" : null,
-                    $"`beatmap_id` >= {Marker}"
+                    $"`beatmap_id` >= {Marker}",
+                    "`deleted_at` IS NULL"
                 );
 
                 return conn.Query<int>($"SELECT `beatmap_id` FROM `osu_beatmaps` {condition}");
