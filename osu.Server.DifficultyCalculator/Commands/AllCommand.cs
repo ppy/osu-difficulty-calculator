@@ -22,10 +22,11 @@ namespace osu.Server.DifficultyCalculator.Commands
                     return Enumerable.Empty<int>();
 
                 var condition = CombineSqlConditions(
-                    RankedOnly ? "`approved` >= 1" : null
+                    RankedOnly ? "`approved` >= 1" : null,
+                    "`deleted_at` IS NULL"
                 );
 
-                return conn.Query<int>($"SELECT `beatmap_id` FROM `osu_beatmaps` {condition} WHERE `deleted_at` IS NULL");
+                return conn.Query<int>($"SELECT `beatmap_id` FROM `osu_beatmaps` {condition}");
             }
         }
     }
