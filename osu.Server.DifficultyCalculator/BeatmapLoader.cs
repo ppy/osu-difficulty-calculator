@@ -26,7 +26,10 @@ namespace osu.Server.DifficultyCalculator
                 if (verbose)
                     reporter.Verbose($"Downloading {beatmapId}.");
 
-                var req = new WebRequest(string.Format(AppSettings.DownloadPath, beatmapId));
+                var req = new WebRequest(string.Format(AppSettings.DownloadPath, beatmapId))
+                {
+                    AllowInsecureRequests = true
+                };
 
                 req.Failed += _ =>
                 {
