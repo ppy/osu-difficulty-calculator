@@ -21,6 +21,8 @@ namespace osu.Server.DifficultyCalculator
                     yield return (5, osu.OverallDifficulty);
                     yield return (7, osu.ApproachRate);
                     yield return (9, osu.MaxCombo);
+                    yield return (15, osu.TouchAimStrain);
+                    yield return (17, osu.TouchSpeedStrain);
                     break;
                 case TaikoDifficultyAttributes taiko:
                     yield return (9, taiko.MaxCombo);
