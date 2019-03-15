@@ -2,6 +2,7 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System.Collections.Generic;
+using osu.Game.Rulesets.Catch.Difficulty;
 using osu.Game.Rulesets.Difficulty;
 using osu.Game.Rulesets.Mania.Difficulty;
 using osu.Game.Rulesets.Osu.Difficulty;
@@ -25,6 +26,11 @@ namespace osu.Server.DifficultyCalculator
                 case TaikoDifficultyAttributes taiko:
                     yield return (9, taiko.MaxCombo);
                     yield return (13, taiko.GreatHitWindow);
+                    break;
+                case CatchDifficultyAttributes @catch:
+                    yield return (1, @catch.StarRating);
+                    yield return (7, @catch.ApproachRate);
+                    yield return (9, @catch.MaxCombo);
                     break;
                 case ManiaDifficultyAttributes mania:
                     yield return (13, mania.GreatHitWindow);
