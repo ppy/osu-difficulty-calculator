@@ -22,18 +22,25 @@ namespace osu.Server.DifficultyCalculator
                     yield return (5, osu.OverallDifficulty);
                     yield return (7, osu.ApproachRate);
                     yield return (9, osu.MaxCombo);
+
                     break;
+
                 case TaikoDifficultyAttributes taiko:
                     yield return (9, taiko.MaxCombo);
                     yield return (13, taiko.GreatHitWindow);
+
                     break;
+
                 case CatchDifficultyAttributes @catch:
                     yield return (1, @catch.StarRating);
                     yield return (7, @catch.ApproachRate);
                     yield return (9, @catch.MaxCombo);
+
                     break;
+
                 case ManiaDifficultyAttributes mania:
                     yield return (13, mania.GreatHitWindow);
+
                     break;
             }
 
