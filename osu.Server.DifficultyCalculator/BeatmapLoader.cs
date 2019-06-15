@@ -56,7 +56,7 @@ namespace osu.Server.DifficultyCalculator
             private readonly Beatmap beatmap;
 
             /// <summary>
-            /// Constructs a new <see cref="LocalWorkingBeatmap"/> from a .osu file.
+            /// Constructs a new <see cref="LoaderWorkingBeatmap"/> from a .osu file.
             /// </summary>
             /// <param name="file">The .osu file.</param>
             public LoaderWorkingBeatmap(string file)
@@ -76,7 +76,7 @@ namespace osu.Server.DifficultyCalculator
             }
 
             private LoaderWorkingBeatmap(Beatmap beatmap)
-                : base(beatmap.BeatmapInfo)
+                : base(beatmap.BeatmapInfo, null)
             {
                 this.beatmap = beatmap;
 
@@ -85,12 +85,15 @@ namespace osu.Server.DifficultyCalculator
                     case 0:
                         beatmap.BeatmapInfo.Ruleset = new OsuRuleset().RulesetInfo;
                         break;
+
                     case 1:
                         beatmap.BeatmapInfo.Ruleset = new TaikoRuleset().RulesetInfo;
                         break;
+
                     case 2:
                         beatmap.BeatmapInfo.Ruleset = new CatchRuleset().RulesetInfo;
                         break;
+
                     case 3:
                         beatmap.BeatmapInfo.Ruleset = new ManiaRuleset().RulesetInfo;
                         break;

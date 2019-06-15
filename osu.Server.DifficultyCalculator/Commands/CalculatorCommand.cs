@@ -107,6 +107,7 @@ namespace osu.Server.DifficultyCalculator.Commands
             totalBeatmaps = beatmaps.Count;
 
             var tasks = new Task[Concurrency];
+
             for (int i = 0; i < Concurrency; i++)
             {
                 int tmp = i;
@@ -151,6 +152,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                 reporter.Verbose($"Processing difficulty for beatmap {beatmapId}.");
 
                 var localBeatmap = BeatmapLoader.GetBeatmap(beatmapId, Verbose, ForceDownload, reporter);
+
                 if (localBeatmap == null)
                 {
                     reporter.Error($"Beatmap {beatmapId} skipped (beatmap file not found).");
@@ -209,6 +211,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                 }
 
                 var parameters = new List<object>();
+
                 foreach (var mapping in attribute.Map())
                 {
                     parameters.Add(new
