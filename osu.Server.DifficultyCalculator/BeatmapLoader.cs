@@ -56,7 +56,7 @@ namespace osu.Server.DifficultyCalculator
             private readonly Beatmap beatmap;
 
             /// <summary>
-            /// Constructs a new <see cref="LocalWorkingBeatmap"/> from a .osu file.
+            /// Constructs a new <see cref="LoaderWorkingBeatmap"/> from a .osu file.
             /// </summary>
             /// <param name="file">The .osu file.</param>
             public LoaderWorkingBeatmap(string file)
@@ -76,7 +76,7 @@ namespace osu.Server.DifficultyCalculator
             }
 
             private LoaderWorkingBeatmap(Beatmap beatmap)
-                : base(beatmap.BeatmapInfo)
+                : base(beatmap.BeatmapInfo, null)
             {
                 this.beatmap = beatmap;
 
