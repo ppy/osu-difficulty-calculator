@@ -26,11 +26,11 @@ namespace osu.Server.DifficultyCalculator
                     break;
 
                 case TaikoDifficultyAttributes taiko:
+                    yield return (3, taiko.SpeedStrain);
                     yield return (9, taiko.MaxCombo);
                     yield return (13, taiko.GreatHitWindow);
                     yield return (15, taiko.ReadingStrain);
-                    yield return (17, taiko.SpeedStrain);
-                    yield return (19, taiko.LengthBonus);
+                    yield return (17, taiko.LengthBonus);
 
                     break;
 
