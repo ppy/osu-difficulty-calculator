@@ -29,8 +29,8 @@ namespace osu.Server.DifficultyCalculator
                     yield return (3, taiko.SpeedStrain);
                     yield return (9, taiko.MaxCombo);
                     yield return (13, taiko.GreatHitWindow);
-                    yield return (15, taiko.ReadingStrain);
-                    yield return (17, taiko.LengthBonus);
+                    yield return (17, taiko.ReadingStrain);
+                    yield return (19, taiko.LengthBonus);
 
                     break;
 
