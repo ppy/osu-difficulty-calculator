@@ -9,11 +9,11 @@ using osu.Server.DifficultyCalculator.Commands;
 namespace osu.Server.DifficultyCalculator
 {
     [Command]
-    [Subcommand("all", typeof(AllCommand))]
-    [Subcommand("files", typeof(FilesCommand))]
-    [Subcommand("beatmaps", typeof(BeatmapsCommand))]
-    [Subcommand("since", typeof(SinceCommand))]
-    [Subcommand("beatmapsstring", typeof(BeatmapsStringCommand))]
+    [Subcommand(typeof(AllCommand))]
+    [Subcommand(typeof(FilesCommand))]
+    [Subcommand(typeof(BeatmapsCommand))]
+    [Subcommand(typeof(SinceCommand))]
+    [Subcommand(typeof(BeatmapsStringCommand))]
     public class Program
     {
         public static void Main(string[] args)
