@@ -252,11 +252,7 @@ paket-files/
 .fake/
 
 # JetBrains Rider
-.idea/.idea.osu.Server/.idea/*.xml
-.idea/.idea.osu.Server/.idea/codeStyles/*.xml
-.idea/.idea.osu.Server/.idea/dataSources/*.xml
-.idea/.idea.osu.Server/.idea/dictionaries/*.xml
-.idea/.idea.osu.Server/*.iml
+.idea/
 *.sln.iml
 
 # CodeRush
