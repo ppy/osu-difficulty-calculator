@@ -5,9 +5,11 @@ using System.IO;
 using McMaster.Extensions.CommandLineUtils;
 using osu.Framework.Audio.Track;
 using osu.Framework.Graphics.Textures;
+using osu.Framework.Graphics.Video;
 using osu.Framework.IO.Network;
 using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Formats;
+using osu.Game.IO;
 using osu.Game.Rulesets.Catch;
 using osu.Game.Rulesets.Mania;
 using osu.Game.Rulesets.Osu;
@@ -77,13 +79,13 @@ namespace osu.Server.DifficultyCalculator
             }
 
             public LoaderWorkingBeatmap(Stream stream)
-                : this(new StreamReader(stream))
+                : this(new LineBufferedReader(stream))
             {
                 stream.Dispose();
             }
 
-            private LoaderWorkingBeatmap(StreamReader streamReader)
-                : this(Decoder.GetDecoder<Beatmap>(streamReader).Decode(streamReader))
+            private LoaderWorkingBeatmap(LineBufferedReader reader)
+                : this(Decoder.GetDecoder<Beatmap>(reader).Decode(reader))
             {
             }
 
@@ -114,6 +116,7 @@ namespace osu.Server.DifficultyCalculator
 
             protected override IBeatmap GetBeatmap() => beatmap;
             protected override Texture GetBackground() => null;
+            protected override VideoSprite GetVideo() => null;
             protected override Track GetTrack() => null;
         }
     }
