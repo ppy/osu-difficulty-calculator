@@ -253,7 +253,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                             conn?.Execute(
                                 "INSERT INTO `osu_beatmaps` (`beatmap_id`, `difficultyrating`, `diff_approach`, `diff_overall`, `diff_drain`, `diff_size`, `bpm`) "
                                 + "VALUES (@BeatmapId, @Diff, @AR, @OD, @HP, @CS) "
-                                + "ON DUPLICATE KEY UPDATE `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @bpm",
+                                + "ON DUPLICATE KEY UPDATE `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM",
                                 param);
                         }
                         else
