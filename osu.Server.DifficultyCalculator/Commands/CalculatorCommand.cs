@@ -243,7 +243,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                         OD = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty,
                         HP = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.DrainRate,
                         CS = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize,
-                        BPM = beatmap.BeatmapInfo.BPM
+                        beatmap.BeatmapInfo.BPM
                     };
 
                     if (!DryRun)
