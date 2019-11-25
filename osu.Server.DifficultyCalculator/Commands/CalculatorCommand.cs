@@ -242,7 +242,8 @@ namespace osu.Server.DifficultyCalculator.Commands
                         AR = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.ApproachRate,
                         OD = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty,
                         HP = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.DrainRate,
-                        CS = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize
+                        CS = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize,
+                        BPM = beatmap.Beatmap.ControlPointInfo.BPMMode
                     };
 
                     if (!DryRun)
@@ -250,15 +251,15 @@ namespace osu.Server.DifficultyCalculator.Commands
                         if (AppSettings.InsertBeatmaps)
                         {
                             conn?.Execute(
-                                "INSERT INTO `osu_beatmaps` (`beatmap_id`, `difficultyrating`, `diff_approach`, `diff_overall`, `diff_drain`, `diff_size`) "
+                                "INSERT INTO `osu_beatmaps` (`beatmap_id`, `difficultyrating`, `diff_approach`, `diff_overall`, `diff_drain`, `diff_size`, `bpm`) "
                                 + "VALUES (@BeatmapId, @Diff, @AR, @OD, @HP, @CS) "
-                                + "ON DUPLICATE KEY UPDATE `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS",
+                                + "ON DUPLICATE KEY UPDATE `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM",
                                 param);
                         }
                         else
                         {
                             conn?.Execute(
-                                "UPDATE `osu_beatmaps` SET `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS "
+                                "UPDATE `osu_beatmaps` SET `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM "
                                 + "WHERE `beatmap_id` = @BeatmapId",
                                 param);
                         }
