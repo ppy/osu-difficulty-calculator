@@ -252,7 +252,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                         {
                             conn?.Execute(
                                 "INSERT INTO `osu_beatmaps` (`beatmap_id`, `difficultyrating`, `diff_approach`, `diff_overall`, `diff_drain`, `diff_size`, `bpm`) "
-                                + "VALUES (@BeatmapId, @Diff, @AR, @OD, @HP, @CS) "
+                                + "VALUES (@BeatmapId, @Diff, @AR, @OD, @HP, @CS, @BPM) "
                                 + "ON DUPLICATE KEY UPDATE `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM",
                                 param);
                         }
@@ -278,7 +278,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                 {
                     var assembly = Assembly.LoadFrom(file);
                     Type type = assembly.GetTypes().First(t => t.IsPublic && t.IsSubclassOf(typeof(Ruleset)));
-                    rulesetsToProcess.Add((Ruleset)Activator.CreateInstance(type, (RulesetInfo)null));
+                    rulesetsToProcess.Add((Ruleset)Activator.CreateInstance(type));
                 }
                 catch
                 {
