@@ -278,7 +278,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                 {
                     var assembly = Assembly.LoadFrom(file);
                     Type type = assembly.GetTypes().First(t => t.IsPublic && t.IsSubclassOf(typeof(Ruleset)));
-                    rulesetsToProcess.Add((Ruleset)Activator.CreateInstance(type, (RulesetInfo)null));
+                    rulesetsToProcess.Add((Ruleset)Activator.CreateInstance(type));
                 }
                 catch
                 {
