@@ -5,7 +5,6 @@ using System.IO;
 using McMaster.Extensions.CommandLineUtils;
 using osu.Framework.Audio.Track;
 using osu.Framework.Graphics.Textures;
-using osu.Framework.Graphics.Video;
 using osu.Framework.IO.Network;
 using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Formats;
@@ -116,7 +115,6 @@ namespace osu.Server.DifficultyCalculator
 
             protected override IBeatmap GetBeatmap() => beatmap;
             protected override Texture GetBackground() => null;
-            protected override VideoSprite GetVideo() => null;
             protected override Track GetTrack() => null;
         }
     }
