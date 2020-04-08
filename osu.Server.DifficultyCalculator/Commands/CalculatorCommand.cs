@@ -87,8 +87,10 @@ namespace osu.Server.DifficultyCalculator.Commands
                         bool initialised = false;
 
                         using (var conn = Database.GetConnection())
+                        {
                             if (conn.QuerySingle<int>("SELECT `count` FROM `osu_counts` WHERE `name` = 'docker_db_step'") >= 1)
                                 initialised = true;
+                        }
 
                         if (initialised)
                             break;
