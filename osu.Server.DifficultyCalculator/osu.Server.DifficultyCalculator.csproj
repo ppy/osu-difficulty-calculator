@@ -14,7 +14,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.5" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="3.1.5" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.5" />
-    <PackageReference Include="MySqlConnector" Version="0.68.1" />
+    <PackageReference Include="MySqlConnector" Version="0.69.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\osu\osu.Game.Rulesets.Catch\osu.Game.Rulesets.Catch.csproj" />
