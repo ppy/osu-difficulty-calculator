@@ -76,7 +76,7 @@ namespace osu.Server.DifficultyCalculator.Commands
 
             threadBeatmapIds = new int[Concurrency];
 
-            if (AppSettings.UseDocker)
+            if (AppSettings.RunAsSandboxDocker)
             {
                 reporter.Output("Waiting for database...");
 
@@ -130,7 +130,7 @@ namespace osu.Server.DifficultyCalculator.Commands
             using (new Timer(_ => outputHealth(), null, 5000, 5000))
                 Task.WaitAll(tasks);
 
-            if (AppSettings.UseDocker)
+            if (AppSettings.RunAsSandboxDocker)
             {
                 using (var conn = Database.GetConnection())
                 {
