@@ -10,8 +10,8 @@ namespace osu.Server.DifficultyCalculator
     {
         public static MySqlConnection GetConnection()
         {
-            string host = (Environment.GetEnvironmentVariable("DB_HOST") ?? "db");
-            string user = (Environment.GetEnvironmentVariable("DB_USER") ?? "www");
+            string host = (Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost");
+            string user = (Environment.GetEnvironmentVariable("DB_USER") ?? "root");
 
             var connection = new MySqlConnection($"Server={host};Database=osu;User ID={user};ConnectionTimeout=5;");
             connection.Open();
@@ -26,7 +26,7 @@ namespace osu.Server.DifficultyCalculator
                 // fallback to master connection if no slave host has been specified.
                 return GetConnection();
 
-            string user = (Environment.GetEnvironmentVariable("DB_USER_SLAVE") ?? "www");
+            string user = (Environment.GetEnvironmentVariable("DB_USER_SLAVE") ?? "root");
 
             var connection = new MySqlConnection($"Server={host};Database=osu;User ID={user};ConnectionTimeout=5;");
             connection.Open();
