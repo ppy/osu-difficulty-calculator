@@ -5,7 +5,7 @@ using System;
 
 namespace osu.Server.DifficultyCalculator
 {
-    public class AppSettings
+    public static class AppSettings
     {
         /// <summary>
         /// Whether to insert entries into the beatmaps table should they not exist. Should be false for production (beatmaps should already exist).
@@ -40,12 +40,12 @@ namespace osu.Server.DifficultyCalculator
 
         static AppSettings()
         {
-            bool.TryParse(Environment.GetEnvironmentVariable("insert_beatmaps"), out InsertBeatmaps);
-            bool.TryParse(Environment.GetEnvironmentVariable("allow_download"), out AllowDownload);
-            bool.TryParse(Environment.GetEnvironmentVariable("save_downloaded"), out SaveDownloaded);
+            bool.TryParse(Environment.GetEnvironmentVariable("INSERT_BEATMAPS"), out InsertBeatmaps);
+            bool.TryParse(Environment.GetEnvironmentVariable("ALLOW_DOWNLOAD"), out AllowDownload);
+            bool.TryParse(Environment.GetEnvironmentVariable("SAVE_DOWNLOADED"), out SaveDownloaded);
 
-            BeatmapsPath = Environment.GetEnvironmentVariable("beatmaps_path") ?? "osu";
-            DownloadPath = Environment.GetEnvironmentVariable("download_path") ?? "https://osu.ppy.sh/osu/{0}";
+            BeatmapsPath = Environment.GetEnvironmentVariable("BEATMAPS_PATH") ?? "osu";
+            DownloadPath = Environment.GetEnvironmentVariable("DOWNLOAD_PATH") ?? "https://osu.ppy.sh/osu/{0}";
 
             RunAsSandboxDocker = Environment.GetEnvironmentVariable("DOCKER")?.Contains("1") ?? false;
         }
