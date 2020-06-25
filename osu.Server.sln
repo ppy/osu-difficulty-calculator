@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "osu.Game", "osu\osu.Game\os
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "osu.Server.DifficultyCalculator", "osu.Server.DifficultyCalculator\osu.Server.DifficultyCalculator.csproj", "{B86E5C04-C9B1-4276-AB15-4F6C7F4A1343}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "osu.Server.Queues.BeatmapProcessor", "osu.Server.Queues.BeatmapProcessor\osu.Server.Queues.BeatmapProcessor.csproj", "{EEB73785-2BD4-4AD9-87B4-B7835842C453}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +44,9 @@ Global
 								{B86E5C04-C9B1-4276-AB15-4F6C7F4A1343}.Debug|Any CPU.Build.0 = Debug|Any CPU
 								{B86E5C04-C9B1-4276-AB15-4F6C7F4A1343}.Release|Any CPU.ActiveCfg = Release|Any CPU
 								{B86E5C04-C9B1-4276-AB15-4F6C7F4A1343}.Release|Any CPU.Build.0 = Release|Any CPU
+					{EEB73785-2BD4-4AD9-87B4-B7835842C453}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+					{EEB73785-2BD4-4AD9-87B4-B7835842C453}.Debug|Any CPU.Build.0 = Debug|Any CPU
+					{EEB73785-2BD4-4AD9-87B4-B7835842C453}.Release|Any CPU.ActiveCfg = Release|Any CPU
+					{EEB73785-2BD4-4AD9-87B4-B7835842C453}.Release|Any CPU.Build.0 = Release|Any CPU
 				EndGlobalSection
 EndGlobal
