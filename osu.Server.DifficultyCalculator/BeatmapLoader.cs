@@ -46,19 +46,18 @@ namespace osu.Server.DifficultyCalculator
 
                 req.Perform();
 
-                if (req.ResponseStream == null)
-                    return null;
+                var stream = req.ResponseStream;
 
                 if (AppSettings.SaveDownloaded)
                 {
                     using (var fileStream = File.Create(fileLocation))
                     {
-                        req.ResponseStream.CopyTo(fileStream);
-                        req.ResponseStream.Seek(0, SeekOrigin.Begin);
+                        stream.CopyTo(fileStream);
+                        stream.Seek(0, SeekOrigin.Begin);
                     }
                 }
 
-                return req.ResponseStream != null ? new LoaderWorkingBeatmap(req.ResponseStream) : null;
+                return new LoaderWorkingBeatmap(stream);
             }
 
             return !File.Exists(fileLocation) ? null : new LoaderWorkingBeatmap(fileLocation);
