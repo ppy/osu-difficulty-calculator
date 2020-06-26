@@ -5,26 +5,18 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
 using Humanizer;
 using McMaster.Extensions.CommandLineUtils;
-using MySql.Data.MySqlClient;
-using osu.Game.Beatmaps;
-using osu.Game.Beatmaps.Legacy;
-using osu.Game.Rulesets;
 
 namespace osu.Server.DifficultyCalculator.Commands
 {
     public abstract class CalculatorCommand : CommandBase
     {
-        private const string ruleset_library_prefix = "osu.Game.Rulesets";
-
         [Option(CommandOptionType.MultipleValue, Template = "-m|--mode <RULESET_ID>", Description = "Ruleset(s) to compute difficulty for.\n"
                                                                                                     + "0 - osu!\n"
                                                                                                     + "1 - osu!taiko\n"
@@ -49,9 +41,6 @@ namespace osu.Server.DifficultyCalculator.Commands
 
         [Option(CommandOptionType.SingleValue, Template = "-l|--log-file", Description = "The file to log output to.")]
         public string LogFile { get; set; }
-
-        [Option(CommandOptionType.NoValue, Template = "-dr|--dry-run", Description = "Don't perform any writes to the database.")]
-        public bool DryRun { get; set; }
 
         private int[] threadBeatmapIds;
 
@@ -103,7 +92,6 @@ namespace osu.Server.DifficultyCalculator.Commands
                 }
             }
 
-            var rulesetsToProcess = getRulesets();
             var beatmaps = new ConcurrentQueue<int>(GetBeatmaps() ?? Enumerable.Empty<int>());
 
             totalBeatmaps = beatmaps.Count;
@@ -116,10 +104,29 @@ namespace osu.Server.DifficultyCalculator.Commands
 
                 tasks[i] = Task.Factory.StartNew(() =>
                 {
-                    while (beatmaps.TryDequeue(out int toProcess))
+                    var calc = new ServerDifficultyCalculator(Rulesets, Converts);
+
+                    while (beatmaps.TryDequeue(out int beatmapId))
                     {
-                        threadBeatmapIds[tmp] = toProcess;
-                        processBeatmap(toProcess, rulesetsToProcess);
+                        threadBeatmapIds[tmp] = beatmapId;
+                        reporter.Verbose($"Processing difficulty for beatmap {beatmapId}.");
+
+                        try
+                        {
+                            var beatmap = BeatmapLoader.GetBeatmap(beatmapId, Verbose, ForceDownload, reporter);
+
+                            // ensure the correct online id is set
+                            beatmap.BeatmapInfo.OnlineBeatmapID = beatmapId;
+
+                            calc.ProcessBeatmap(beatmap);
+                            reporter.Verbose($"Difficulty updated for beatmap {beatmapId}.");
+                        }
+                        catch (Exception e)
+                        {
+                            reporter.Error($"{beatmapId} failed with {e}");
+                        }
+
+                        Interlocked.Increment(ref processedBeatmaps);
                     }
                 });
             }
@@ -145,153 +152,6 @@ namespace osu.Server.DifficultyCalculator.Commands
             outputProgress();
 
             reporter.Output("Done.");
-        }
-
-        private void processBeatmap(int beatmapId, List<Ruleset> rulesets)
-        {
-            try
-            {
-                reporter.Verbose($"Processing difficulty for beatmap {beatmapId}.");
-
-                var localBeatmap = BeatmapLoader.GetBeatmap(beatmapId, Verbose, ForceDownload, reporter);
-
-                if (localBeatmap == null)
-                {
-                    reporter.Error($"Beatmap {beatmapId} skipped (beatmap file not found).");
-                    return;
-                }
-
-                if (localBeatmap.Beatmap.HitObjects.Count == 0)
-                {
-                    using (var conn = Database.GetSlaveConnection())
-                    {
-                        if (conn?.QuerySingleOrDefault<int>("SELECT `approved` FROM `osu_beatmaps` WHERE `beatmap_id` = @BeatmapId", new { BeatmapId = beatmapId }) > 0)
-                            reporter.Error($"Ranked beatmap {beatmapId} has 0 hitobjects!");
-                    }
-                }
-
-                using (var conn = Database.GetConnection())
-                {
-                    if (Converts && localBeatmap.BeatmapInfo.RulesetID == 0)
-                    {
-                        foreach (var ruleset in rulesets)
-                            computeDifficulty(beatmapId, localBeatmap, ruleset, conn);
-                    }
-                    else if (rulesets.Any(r => r.RulesetInfo.ID == localBeatmap.BeatmapInfo.RulesetID))
-                        computeDifficulty(beatmapId, localBeatmap, localBeatmap.BeatmapInfo.Ruleset.CreateInstance(), conn);
-                }
-
-                reporter.Verbose($"Difficulty updated for beatmap {beatmapId}.");
-            }
-            catch (Exception e)
-            {
-                reporter.Error($"{beatmapId} failed with: {e.Message}");
-            }
-
-            Interlocked.Increment(ref processedBeatmaps);
-        }
-
-        private void computeDifficulty(int beatmapId, WorkingBeatmap beatmap, Ruleset ruleset, MySqlConnection conn)
-        {
-            foreach (var attribute in ruleset.CreateDifficultyCalculator(beatmap).CalculateAll())
-            {
-                var legacyMod = attribute.Mods.ToLegacy();
-
-                if (!DryRun)
-                {
-                    conn?.Execute(
-                        "INSERT INTO `osu_beatmap_difficulty` (`beatmap_id`, `mode`, `mods`, `diff_unified`) "
-                        + "VALUES (@BeatmapId, @Mode, @Mods, @Diff) "
-                        + "ON DUPLICATE KEY UPDATE `diff_unified` = @Diff",
-                        new
-                        {
-                            BeatmapId = beatmapId,
-                            Mode = ruleset.RulesetInfo.ID,
-                            Mods = (int)legacyMod,
-                            Diff = attribute.StarRating
-                        });
-                }
-
-                var parameters = new List<object>();
-
-                foreach (var mapping in attribute.Map())
-                {
-                    parameters.Add(new
-                    {
-                        BeatmapId = beatmapId,
-                        Mode = ruleset.RulesetInfo.ID,
-                        Mods = (int)legacyMod,
-                        Attribute = mapping.id,
-                        Value = Convert.ToSingle(mapping.value)
-                    });
-                }
-
-                if (!DryRun)
-                {
-                    conn?.Execute(
-                        "INSERT INTO `osu_beatmap_difficulty_attribs` (`beatmap_id`, `mode`, `mods`, `attrib_id`, `value`) "
-                        + "VALUES (@BeatmapId, @Mode, @Mods, @Attribute, @Value) "
-                        + "ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
-                        parameters.ToArray());
-                }
-
-                if (legacyMod == LegacyMods.None && ruleset.RulesetInfo.Equals(beatmap.BeatmapInfo.Ruleset))
-                {
-                    object param = new
-                    {
-                        BeatmapId = beatmapId,
-                        Diff = attribute.StarRating,
-                        AR = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.ApproachRate,
-                        OD = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty,
-                        HP = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.DrainRate,
-                        CS = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize,
-                        BPM = beatmap.Beatmap.ControlPointInfo.BPMMode
-                    };
-
-                    if (!DryRun)
-                    {
-                        if (AppSettings.INSERT_BEATMAPS)
-                        {
-                            conn?.Execute(
-                                "INSERT INTO `osu_beatmaps` (`beatmap_id`, `difficultyrating`, `diff_approach`, `diff_overall`, `diff_drain`, `diff_size`, `bpm`) "
-                                + "VALUES (@BeatmapId, @Diff, @AR, @OD, @HP, @CS, @BPM) "
-                                + "ON DUPLICATE KEY UPDATE `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM",
-                                param);
-                        }
-                        else
-                        {
-                            conn?.Execute(
-                                "UPDATE `osu_beatmaps` SET `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM "
-                                + "WHERE `beatmap_id` = @BeatmapId",
-                                param);
-                        }
-                    }
-                }
-            }
-        }
-
-        private List<Ruleset> getRulesets()
-        {
-            var rulesetsToProcess = new List<Ruleset>();
-
-            foreach (string file in Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, $"{ruleset_library_prefix}.*.dll"))
-            {
-                try
-                {
-                    var assembly = Assembly.LoadFrom(file);
-                    Type type = assembly.GetTypes().First(t => t.IsPublic && t.IsSubclassOf(typeof(Ruleset)));
-                    rulesetsToProcess.Add((Ruleset)Activator.CreateInstance(type));
-                }
-                catch
-                {
-                    reporter.Error($"Failed to load ruleset ({file})");
-                }
-            }
-
-            if (Rulesets != null)
-                rulesetsToProcess.RemoveAll(r => Rulesets.All(u => u != r.RulesetInfo.ID));
-
-            return rulesetsToProcess;
         }
 
         private int lastProgress;

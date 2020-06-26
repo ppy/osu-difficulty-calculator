@@ -18,14 +18,14 @@ namespace osu.Server.DifficultyCalculator
 {
     public static class BeatmapLoader
     {
-        public static WorkingBeatmap GetBeatmap(int beatmapId, bool verbose, bool forceDownload, IReporter reporter)
+        public static WorkingBeatmap GetBeatmap(int beatmapId, bool verbose = false, bool forceDownload = true, IReporter reporter = null)
         {
             string fileLocation = Path.Combine(AppSettings.BEATMAPS_PATH, beatmapId.ToString()) + ".osu";
 
             if ((forceDownload || !File.Exists(fileLocation)) && AppSettings.ALLOW_DOWNLOAD)
             {
                 if (verbose)
-                    reporter.Verbose($"Downloading {beatmapId}.");
+                    reporter?.Verbose($"Downloading {beatmapId}.");
 
                 var req = new WebRequest(string.Format(AppSettings.DOWNLOAD_PATH, beatmapId))
                 {
@@ -35,30 +35,29 @@ namespace osu.Server.DifficultyCalculator
                 req.Failed += _ =>
                 {
                     if (verbose)
-                        reporter.Error($"Failed to download {beatmapId}.");
+                        reporter?.Error($"Failed to download {beatmapId}.");
                 };
 
                 req.Finished += () =>
                 {
                     if (verbose)
-                        reporter.Verbose($"{beatmapId} successfully downloaded.");
+                        reporter?.Verbose($"{beatmapId} successfully downloaded.");
                 };
 
                 req.Perform();
 
-                if (req.ResponseStream == null)
-                    return null;
+                var stream = req.ResponseStream;
 
                 if (AppSettings.SAVE_DOWNLOADED)
                 {
                     using (var fileStream = File.Create(fileLocation))
                     {
-                        req.ResponseStream.CopyTo(fileStream);
-                        req.ResponseStream.Seek(0, SeekOrigin.Begin);
+                        stream.CopyTo(fileStream);
+                        stream.Seek(0, SeekOrigin.Begin);
                     }
                 }
 
-                return req.ResponseStream != null ? new LoaderWorkingBeatmap(req.ResponseStream) : null;
+                return new LoaderWorkingBeatmap(stream);
             }
 
             return !File.Exists(fileLocation) ? null : new LoaderWorkingBeatmap(fileLocation);
