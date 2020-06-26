@@ -2,7 +2,7 @@
   <Import Project="../osu.Server.props" />
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <AssemblyName>osu.Server.DifficultyCalculator</AssemblyName>
     <RootNamespace>osu.Server.DifficultyCalculator</RootNamespace>
     <LangVersion>7.1</LangVersion>
@@ -24,9 +24,6 @@
     <ProjectReference Include="..\osu\osu.Game\osu.Game.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="appsettings.*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

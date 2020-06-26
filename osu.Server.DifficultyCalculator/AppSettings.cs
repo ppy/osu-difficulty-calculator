@@ -2,46 +2,52 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
-using Microsoft.Extensions.Configuration;
 
 namespace osu.Server.DifficultyCalculator
 {
-    public class AppSettings
+    public static class AppSettings
     {
-        public static string ConnectionStringMaster { get; }
-        public static string ConnectionStringSlave { get; }
+        /// <summary>
+        /// Whether to insert entries into the beatmaps table should they not exist. Should be false for production (beatmaps should already exist).
+        /// </summary>
+        public static readonly bool INSERT_BEATMAPS;
 
-        public static bool InsertBeatmaps { get; }
+        /// <summary>
+        /// A full or relative path used to store beatmaps.
+        /// </summary>
+        public static readonly string BEATMAPS_PATH;
 
-        public static string BeatmapsPath { get; }
+        /// <summary>
+        /// Whether beatmaps should be downloaded if they don't exist in <see cref="BEATMAPS_PATH"/>.
+        /// </summary>
+        public static readonly bool ALLOW_DOWNLOAD;
 
-        public static bool AllowDownload { get; }
-        public static string DownloadPath { get; }
-        public static bool SaveDownloaded { get; }
+        /// <summary>
+        /// A URL used to download beatmaps with {0} being replaced with the beatmap_id.
+        /// ie. "https://osu.ppy.sh/osu/{0}"
+        /// </summary>
+        public static readonly string DOWNLOAD_PATH;
 
-        public static bool UseDocker { get; }
+        /// <summary>
+        /// Whether downloaded files should be cached to <see cref="BEATMAPS_PATH"/>.
+        /// </summary>
+        public static readonly bool SAVE_DOWNLOADED;
+
+        /// <summary>
+        /// Whether the difficulty command should wait for docker to be ready and perform automatic operations.
+        /// </summary>
+        public static readonly bool RUN_AS_SANDBOX_DOCKER;
 
         static AppSettings()
         {
-            var env = Environment.GetEnvironmentVariable("APP_ENV") ?? "development";
-            var config = new ConfigurationBuilder()
-                         .AddJsonFile("appsettings.json", true, false)
-                         .AddJsonFile($"appsettings.{env}.json", true, false)
-                         .AddEnvironmentVariables()
-                         .Build();
+            INSERT_BEATMAPS = Environment.GetEnvironmentVariable("INSERT_BEATMAPS") == "1";
+            ALLOW_DOWNLOAD = Environment.GetEnvironmentVariable("ALLOW_DOWNLOAD") == "1";
+            SAVE_DOWNLOADED = Environment.GetEnvironmentVariable("SAVE_DOWNLOADED") == "1";
 
-            ConnectionStringMaster = config.GetConnectionString("master");
-            ConnectionStringSlave = config.GetConnectionString("slave");
+            BEATMAPS_PATH = Environment.GetEnvironmentVariable("BEATMAPS_PATH") ?? "osu";
+            DOWNLOAD_PATH = Environment.GetEnvironmentVariable("DOWNLOAD_PATH") ?? "https://osu.ppy.sh/osu/{0}";
 
-            InsertBeatmaps = bool.Parse(config["insert_beatmaps"]);
-
-            BeatmapsPath = config["beatmaps_path"];
-
-            AllowDownload = bool.Parse(config["allow_download"]);
-            DownloadPath = config["download_path"];
-            SaveDownloaded = bool.Parse(config["save_downloaded"]);
-
-            UseDocker = Environment.GetEnvironmentVariable("DOCKER")?.Contains("1") ?? false;
+            RUN_AS_SANDBOX_DOCKER = Environment.GetEnvironmentVariable("DOCKER") == "1";
         }
     }
 }
