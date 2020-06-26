@@ -10,5 +10,7 @@ namespace osu.Server.Queues.BeatmapProcessor
     public class BeatmapItem : QueueItem
     {
         public long beatmapset_id { get; set; }
+
+        public override string ToString() => $"beatmapset_id:{beatmapset_id}";
     }
 }
