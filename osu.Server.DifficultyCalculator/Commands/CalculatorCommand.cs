@@ -107,18 +107,16 @@ namespace osu.Server.DifficultyCalculator.Commands
 
                 tasks[i] = Task.Factory.StartNew(() =>
                 {
+                    var calc = new ServerDifficultyCalculator(Rulesets, Converts);
+
                     while (beatmaps.TryDequeue(out int beatmapId))
                     {
                         threadBeatmapIds[tmp] = beatmapId;
-                        var calc = new ServerDifficultyCalculator(Rulesets, Converts);
-
                         reporter.Verbose($"Processing difficulty for beatmap {beatmapId}.");
 
                         try
                         {
-                            var beatmap = BeatmapLoader.GetBeatmap(beatmapId, Verbose, ForceDownload, reporter);
-
-                            calc.ProcessBeatmap(beatmap);
+                            calc.ProcessBeatmap(BeatmapLoader.GetBeatmap(beatmapId, Verbose, ForceDownload, reporter));
                             reporter.Verbose($"Difficulty updated for beatmap {beatmapId}.");
                         }
                         catch (Exception e)
