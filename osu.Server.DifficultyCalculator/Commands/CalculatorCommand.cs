@@ -110,7 +110,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                     while (beatmaps.TryDequeue(out int beatmapId))
                     {
                         threadBeatmapIds[tmp] = beatmapId;
-                        var calc = new ServerDifficultyCalculator(null);
+                        var calc = new ServerDifficultyCalculator(Rulesets, Converts);
 
                         reporter.Verbose($"Processing difficulty for beatmap {beatmapId}.");
 
