@@ -40,14 +40,14 @@ namespace osu.Server.DifficultyCalculator
 
         static AppSettings()
         {
-            bool.TryParse(Environment.GetEnvironmentVariable("INSERT_BEATMAPS"), out INSERT_BEATMAPS);
-            bool.TryParse(Environment.GetEnvironmentVariable("ALLOW_DOWNLOAD"), out ALLOW_DOWNLOAD);
-            bool.TryParse(Environment.GetEnvironmentVariable("SAVE_DOWNLOADED"), out SAVE_DOWNLOADED);
+            INSERT_BEATMAPS = Environment.GetEnvironmentVariable("INSERT_BEATMAPS") == "1";
+            ALLOW_DOWNLOAD = Environment.GetEnvironmentVariable("ALLOW_DOWNLOAD") == "1";
+            SAVE_DOWNLOADED = Environment.GetEnvironmentVariable("SAVE_DOWNLOADED") == "1";
 
             BEATMAPS_PATH = Environment.GetEnvironmentVariable("BEATMAPS_PATH") ?? "osu";
             DOWNLOAD_PATH = Environment.GetEnvironmentVariable("DOWNLOAD_PATH") ?? "https://osu.ppy.sh/osu/{0}";
 
-            RUN_AS_SANDBOX_DOCKER = Environment.GetEnvironmentVariable("DOCKER")?.Contains("1") ?? false;
+            RUN_AS_SANDBOX_DOCKER = Environment.GetEnvironmentVariable("DOCKER") == "1";
         }
     }
 }
