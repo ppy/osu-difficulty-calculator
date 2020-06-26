@@ -18,10 +18,9 @@ namespace osu.Server.DifficultyCalculator
 {
     public class ServerDifficultyCalculator
     {
-        private static readonly List<Ruleset> availableRulesets = getRulesets();
+        private static readonly List<Ruleset> available_rulesets = getRulesets();
 
         private readonly bool processConverts;
-
         private readonly List<Ruleset> processableRulesets = new List<Ruleset>();
 
         public ServerDifficultyCalculator(int[] rulesetIds = null, bool processConverts = true)
@@ -31,11 +30,11 @@ namespace osu.Server.DifficultyCalculator
             if (rulesetIds != null)
             {
                 foreach (int id in rulesetIds)
-                    processableRulesets.Add(availableRulesets.Single(r => r.RulesetInfo.ID == id));
+                    processableRulesets.Add(available_rulesets.Single(r => r.RulesetInfo.ID == id));
             }
             else
             {
-                processableRulesets.AddRange(availableRulesets);
+                processableRulesets.AddRange(available_rulesets);
             }
         }
 
@@ -73,7 +72,7 @@ namespace osu.Server.DifficultyCalculator
             }
         }
 
-        public void computeDifficulty(int beatmapId, WorkingBeatmap beatmap, Ruleset ruleset, [CanBeNull] MySqlConnection conn)
+        private void computeDifficulty(int beatmapId, WorkingBeatmap beatmap, Ruleset ruleset, [CanBeNull] MySqlConnection conn)
         {
             foreach (var attribute in ruleset.CreateDifficultyCalculator(beatmap).CalculateAll())
             {
