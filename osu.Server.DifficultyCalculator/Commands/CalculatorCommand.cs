@@ -42,9 +42,6 @@ namespace osu.Server.DifficultyCalculator.Commands
         [Option(CommandOptionType.SingleValue, Template = "-l|--log-file", Description = "The file to log output to.")]
         public string LogFile { get; set; }
 
-        [Option(CommandOptionType.NoValue, Template = "-dr|--dry-run", Description = "Don't perform any writes to the database.")]
-        public bool DryRun { get; set; }
-
         private int[] threadBeatmapIds;
 
         private IReporter reporter;
