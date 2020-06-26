@@ -124,7 +124,7 @@ namespace osu.Server.DifficultyCalculator
                         BPM = beatmap.Beatmap.ControlPointInfo.BPMMode
                     };
 
-                    if (AppSettings.InsertBeatmaps)
+                    if (AppSettings.INSERT_BEATMAPS)
                     {
                         conn?.Execute(
                             "INSERT INTO `osu_beatmaps` (`beatmap_id`, `difficultyrating`, `diff_approach`, `diff_overall`, `diff_drain`, `diff_size`, `bpm`) "
