@@ -76,7 +76,7 @@ namespace osu.Server.DifficultyCalculator.Commands
 
             threadBeatmapIds = new int[Concurrency];
 
-            if (AppSettings.RunAsSandboxDocker)
+            if (AppSettings.RUN_AS_SANDBOX_DOCKER)
             {
                 reporter.Output("Waiting for database...");
 
@@ -130,7 +130,7 @@ namespace osu.Server.DifficultyCalculator.Commands
             using (new Timer(_ => outputHealth(), null, 5000, 5000))
                 Task.WaitAll(tasks);
 
-            if (AppSettings.RunAsSandboxDocker)
+            if (AppSettings.RUN_AS_SANDBOX_DOCKER)
             {
                 using (var conn = Database.GetConnection())
                 {
@@ -250,7 +250,7 @@ namespace osu.Server.DifficultyCalculator.Commands
 
                     if (!DryRun)
                     {
-                        if (AppSettings.InsertBeatmaps)
+                        if (AppSettings.INSERT_BEATMAPS)
                         {
                             conn?.Execute(
                                 "INSERT INTO `osu_beatmaps` (`beatmap_id`, `difficultyrating`, `diff_approach`, `diff_overall`, `diff_drain`, `diff_size`, `bpm`) "

@@ -20,14 +20,14 @@ namespace osu.Server.DifficultyCalculator
     {
         public static WorkingBeatmap GetBeatmap(int beatmapId, bool verbose, bool forceDownload, IReporter reporter)
         {
-            string fileLocation = Path.Combine(AppSettings.BeatmapsPath, beatmapId.ToString()) + ".osu";
+            string fileLocation = Path.Combine(AppSettings.BEATMAPS_PATH, beatmapId.ToString()) + ".osu";
 
-            if ((forceDownload || !File.Exists(fileLocation)) && AppSettings.AllowDownload)
+            if ((forceDownload || !File.Exists(fileLocation)) && AppSettings.ALLOW_DOWNLOAD)
             {
                 if (verbose)
                     reporter.Verbose($"Downloading {beatmapId}.");
 
-                var req = new WebRequest(string.Format(AppSettings.DownloadPath, beatmapId))
+                var req = new WebRequest(string.Format(AppSettings.DOWNLOAD_PATH, beatmapId))
                 {
                     AllowInsecureRequests = true
                 };
@@ -49,7 +49,7 @@ namespace osu.Server.DifficultyCalculator
                 if (req.ResponseStream == null)
                     return null;
 
-                if (AppSettings.SaveDownloaded)
+                if (AppSettings.SAVE_DOWNLOADED)
                 {
                     using (var fileStream = File.Create(fileLocation))
                     {
