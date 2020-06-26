@@ -15,7 +15,7 @@ namespace osu.Server.Queues.BeatmapProcessor
         public BeatmapProcessor()
             : base(new QueueConfiguration { InputQueueName = "beatmap" })
         {
-            calculator = new ServerDifficultyCalculator();
+            calculator = new ServerDifficultyCalculator(new[] { 0, 2 });
         }
 
         protected override void ProcessResult(BeatmapItem item)
