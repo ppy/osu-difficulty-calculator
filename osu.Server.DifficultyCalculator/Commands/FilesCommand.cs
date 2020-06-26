@@ -14,7 +14,7 @@ namespace osu.Server.DifficultyCalculator.Commands
         {
             var ids = new List<int>();
 
-            foreach (var f in Directory.GetFiles(AppSettings.BeatmapsPath))
+            foreach (var f in Directory.GetFiles(AppSettings.BEATMAPS_PATH))
             {
                 var filename = Path.GetFileNameWithoutExtension(f);
 
