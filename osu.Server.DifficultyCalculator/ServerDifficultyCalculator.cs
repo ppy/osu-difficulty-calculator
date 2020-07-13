@@ -9,7 +9,7 @@ using System.Linq;
 using System.Reflection;
 using Dapper;
 using JetBrains.Annotations;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Legacy;
 using osu.Game.Rulesets;

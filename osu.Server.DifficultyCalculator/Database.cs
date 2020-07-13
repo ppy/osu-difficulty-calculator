@@ -2,7 +2,7 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 
 namespace osu.Server.DifficultyCalculator
 {
