@@ -12,8 +12,9 @@ namespace osu.Server.DifficultyCalculator
         {
             string host = (Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost");
             string user = (Environment.GetEnvironmentVariable("DB_USER") ?? "root");
+            string db = (Environment.GetEnvironmentVariable("DB_NAME") ?? "osu");
 
-            var connection = new MySqlConnection($"Server={host};Database=osu;User ID={user};ConnectionTimeout=5;");
+            var connection = new MySqlConnection($"Server={host};Database={db};User ID={user};ConnectionTimeout=5;");
             connection.Open();
             return connection;
         }
@@ -27,8 +28,9 @@ namespace osu.Server.DifficultyCalculator
                 return GetConnection();
 
             string user = (Environment.GetEnvironmentVariable("DB_USER_SLAVE") ?? "root");
+            string db = (Environment.GetEnvironmentVariable("DB_NAME") ?? "osu");
 
-            var connection = new MySqlConnection($"Server={host};Database=osu;User ID={user};ConnectionTimeout=5;");
+            var connection = new MySqlConnection($"Server={host};Database={db};User ID={user};ConnectionTimeout=5;");
             connection.Open();
             return connection;
         }
