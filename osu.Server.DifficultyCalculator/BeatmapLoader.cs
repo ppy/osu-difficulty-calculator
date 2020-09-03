@@ -114,7 +114,7 @@ namespace osu.Server.DifficultyCalculator
 
             protected override IBeatmap GetBeatmap() => beatmap;
             protected override Texture GetBackground() => null;
-            protected override Track GetTrack() => null;
+            protected override Track GetBeatmapTrack() => null;
         }
     }
 }

@@ -17,6 +17,10 @@ namespace osu.Server.DifficultyCalculator
             {
                 switch (mod)
                 {
+                    case ManiaModFadeIn _:
+                        value |= LegacyMods.FadeIn;
+                        break;
+
                     case ModNoFail _:
                         value |= LegacyMods.NoFail;
                         break;
@@ -89,8 +93,8 @@ namespace osu.Server.DifficultyCalculator
                         value |= LegacyMods.Key9;
                         break;
 
-                    case ManiaModFadeIn _:
-                        value |= LegacyMods.FadeIn;
+                    case ManiaModMirror _:
+                        value |= LegacyMods.Mirror;
                         break;
                 }
             }
