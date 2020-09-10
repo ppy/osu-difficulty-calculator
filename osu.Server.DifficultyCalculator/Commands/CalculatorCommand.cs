@@ -4,13 +4,11 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
-using Humanizer;
 using McMaster.Extensions.CommandLineUtils;
 
 namespace osu.Server.DifficultyCalculator.Commands
@@ -165,7 +163,7 @@ namespace osu.Server.DifficultyCalculator.Commands
 
         private void outputHealth()
         {
-            var process = Process.GetCurrentProcess();
+            // var process = Process.GetCurrentProcess();
             //reporter.Verbose($"Health p:{process.PrivateMemorySize64.Bytes()} v:{process.VirtualMemorySize64.Bytes()} w:{process.WorkingSet64.Bytes()}");
 
             string threadsString = string.Empty;
