@@ -166,7 +166,7 @@ namespace osu.Server.DifficultyCalculator.Commands
         private void outputHealth()
         {
             var process = Process.GetCurrentProcess();
-            reporter.Verbose($"Health p:{process.PrivateMemorySize64.Bytes()} v:{process.VirtualMemorySize64.Bytes()} w:{process.WorkingSet64.Bytes()}");
+            //reporter.Verbose($"Health p:{process.PrivateMemorySize64.Bytes()} v:{process.VirtualMemorySize64.Bytes()} w:{process.WorkingSet64.Bytes()}");
 
             string threadsString = string.Empty;
             for (int i = 0; i < threadBeatmapIds.Length; i++)
