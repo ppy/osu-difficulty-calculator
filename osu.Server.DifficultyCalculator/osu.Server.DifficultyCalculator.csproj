@@ -6,6 +6,8 @@
     <AssemblyName>osu.Server.DifficultyCalculator</AssemblyName>
     <RootNamespace>osu.Server.DifficultyCalculator</RootNamespace>
     <LangVersion>7.1</LangVersion>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.0.35" />
