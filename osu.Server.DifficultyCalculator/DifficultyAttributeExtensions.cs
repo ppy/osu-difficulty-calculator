@@ -28,8 +28,8 @@ namespace osu.Server.DifficultyCalculator
 
                 case TaikoDifficultyAttributes taiko:
                     yield return (9, taiko.MaxCombo);
-                    yield return (13, taiko.GreatHitWindow);
                     yield return (11, attributes.StarRating);
+                    yield return (13, taiko.GreatHitWindow);
 
                     break;
 
@@ -41,8 +41,9 @@ namespace osu.Server.DifficultyCalculator
                     break;
 
                 case ManiaDifficultyAttributes mania:
-                    yield return (13, mania.GreatHitWindow);
                     yield return (11, attributes.StarRating);
+                    yield return (13, mania.GreatHitWindow);
+                    yield return (15, mania.ScoreMultiplier);
 
                     break;
             }
