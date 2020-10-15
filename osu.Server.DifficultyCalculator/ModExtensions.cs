@@ -96,6 +96,10 @@ namespace osu.Server.DifficultyCalculator
                     case ManiaModMirror _:
                         value |= LegacyMods.Mirror;
                         break;
+
+                    case ManiaModDualStages _:
+                        value |= LegacyMods.KeyCoop;
+                        break;
                 }
             }
 
