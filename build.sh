@@ -1,3 +1,5 @@
+#!/bin/bash
+
 echo "Installing Cake.Tool..."
 dotnet tool install Cake.Tool --global --version 0.35.0
 
