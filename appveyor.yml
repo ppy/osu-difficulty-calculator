@@ -2,8 +2,13 @@ clone_depth: 1
 version: '{branch}-{build}'
 image: Visual Studio 2019
 test: off
+
+environment:
+  APPVEYOR: true
+
 build_script:
   - cmd: dotnet tool restore
   - cmd: dotnet build osu.Server.sln -c:Release
+  - cmd: dotnet CodeFileSanity
   - cmd: dotnet jb inspectcode "osu.Server.sln" --output="temp/inspectcodereport.xml" --caches-home="temp/inspectcode" --verbosity=WARN
   - cmd: dotnet nvika parsereport "temp/inspectcodereport.xml" --treatwarningsaserrors
