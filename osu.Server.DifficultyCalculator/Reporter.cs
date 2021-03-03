@@ -19,7 +19,7 @@ namespace osu.Server.DifficultyCalculator
         /// </summary>
         public bool IsQuiet { get; set; }
 
-        private readonly object _writeLock = new object();
+        private readonly object writeLock = new object();
         private readonly IConsole console;
         private readonly StreamWriter fileWriter;
         private readonly StreamWriter errorFileWriter;
@@ -46,7 +46,7 @@ namespace osu.Server.DifficultyCalculator
 
         private void writeLine(TextWriter consoleWriter, string message, ConsoleColor? foregroundColour = null)
         {
-            lock (_writeLock)
+            lock (writeLock)
             {
                 if (foregroundColour.HasValue)
                     Console.ForegroundColor = foregroundColour.Value;

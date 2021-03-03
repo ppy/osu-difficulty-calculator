@@ -51,7 +51,7 @@ namespace osu.Server.DifficultyCalculator
                     using (var conn = Database.GetSlaveConnection())
                     {
                         if (conn?.QuerySingleOrDefault<int>("SELECT `approved` FROM `osu_beatmaps` WHERE `beatmap_id` = @BeatmapId", new { BeatmapId = beatmapId }) > 0)
-                            throw new Exception($"Ranked beatmap {beatmapId} has 0 hitobjects!");
+                            throw new ArgumentException($"Ranked beatmap {beatmapId} has 0 hitobjects!");
                     }
                 }
 
@@ -120,7 +120,7 @@ namespace osu.Server.DifficultyCalculator
                         OD = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty,
                         HP = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.DrainRate,
                         CS = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize,
-                        BPM = beatmap.Beatmap.ControlPointInfo.BPMMode
+                        BPM = 60000 / beatmap.Beatmap.GetMostCommonBeatLength()
                     };
 
                     if (AppSettings.INSERT_BEATMAPS)
