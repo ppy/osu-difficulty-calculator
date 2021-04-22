@@ -21,11 +21,13 @@ namespace osu.Server.DifficultyCalculator
         private static readonly List<Ruleset> available_rulesets = getRulesets();
 
         private readonly bool processConverts;
+        private readonly bool dryRun;
         private readonly List<Ruleset> processableRulesets = new List<Ruleset>();
 
-        public ServerDifficultyCalculator(int[] rulesetIds = null, bool processConverts = true)
+        public ServerDifficultyCalculator(int[] rulesetIds = null, bool processConverts = true, bool dryRun = false)
         {
             this.processConverts = processConverts;
+            this.dryRun = dryRun;
 
             if (rulesetIds != null)
             {
@@ -76,6 +78,9 @@ namespace osu.Server.DifficultyCalculator
         {
             foreach (var attribute in ruleset.CreateDifficultyCalculator(beatmap).CalculateAll())
             {
+                if (dryRun)
+                    continue;
+
                 var legacyMod = attribute.Mods.ToLegacy();
 
                 conn?.Execute(
