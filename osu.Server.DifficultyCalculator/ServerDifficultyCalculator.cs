@@ -95,25 +95,28 @@ namespace osu.Server.DifficultyCalculator
                         Diff = attribute.StarRating
                     });
 
-                var parameters = new List<object>();
-
-                foreach (var mapping in attribute.Map())
+                if (!AppSettings.SKIP_INSERT_ATTRIBUTES)
                 {
-                    parameters.Add(new
-                    {
-                        BeatmapId = beatmapId,
-                        Mode = ruleset.RulesetInfo.ID,
-                        Mods = (int)legacyMod,
-                        Attribute = mapping.id,
-                        Value = Convert.ToSingle(mapping.value)
-                    });
-                }
+                    var parameters = new List<object>();
 
-                conn?.Execute(
-                    "INSERT INTO `osu_beatmap_difficulty_attribs` (`beatmap_id`, `mode`, `mods`, `attrib_id`, `value`) "
-                    + "VALUES (@BeatmapId, @Mode, @Mods, @Attribute, @Value) "
-                    + "ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
-                    parameters.ToArray());
+                    foreach (var mapping in attribute.Map())
+                    {
+                        parameters.Add(new
+                        {
+                            BeatmapId = beatmapId,
+                            Mode = ruleset.RulesetInfo.ID,
+                            Mods = (int)legacyMod,
+                            Attribute = mapping.id,
+                            Value = Convert.ToSingle(mapping.value)
+                        });
+                    }
+
+                    conn?.Execute(
+                        "INSERT INTO `osu_beatmap_difficulty_attribs` (`beatmap_id`, `mode`, `mods`, `attrib_id`, `value`) "
+                        + "VALUES (@BeatmapId, @Mode, @Mods, @Attribute, @Value) "
+                        + "ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
+                        parameters.ToArray());
+                }
 
                 if (legacyMod == LegacyMods.None && ruleset.RulesetInfo.Equals(beatmap.BeatmapInfo.Ruleset))
                 {

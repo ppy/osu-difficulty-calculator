@@ -13,6 +13,11 @@ namespace osu.Server.DifficultyCalculator
         public static readonly bool INSERT_BEATMAPS;
 
         /// <summary>
+        /// Whether to insert entries to `osu_difficulty_attributes`. This is quite an intensive operation, and may be skipped when not required (ie. for sandbox runs).
+        /// </summary>
+        public static readonly bool SKIP_INSERT_ATTRIBUTES;
+
+        /// <summary>
         /// A full or relative path used to store beatmaps.
         /// </summary>
         public static readonly string BEATMAPS_PATH;
@@ -41,6 +46,7 @@ namespace osu.Server.DifficultyCalculator
         static AppSettings()
         {
             INSERT_BEATMAPS = Environment.GetEnvironmentVariable("INSERT_BEATMAPS") == "1";
+            SKIP_INSERT_ATTRIBUTES = Environment.GetEnvironmentVariable("SKIP_INSERT_ATTRIBUTES") == "1";
             ALLOW_DOWNLOAD = Environment.GetEnvironmentVariable("ALLOW_DOWNLOAD") == "1";
             SAVE_DOWNLOADED = Environment.GetEnvironmentVariable("SAVE_DOWNLOADED") == "1";
 
