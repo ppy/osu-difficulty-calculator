@@ -2,9 +2,11 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System.Collections.Generic;
+using System.Linq;
 using osu.Game.Rulesets.Catch.Difficulty;
 using osu.Game.Rulesets.Difficulty;
 using osu.Game.Rulesets.Mania.Difficulty;
+using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Osu.Difficulty;
 using osu.Game.Rulesets.Taiko.Difficulty;
 
@@ -23,7 +25,9 @@ namespace osu.Server.DifficultyCalculator
                     yield return (7, osu.ApproachRate);
                     yield return (9, osu.MaxCombo);
                     yield return (11, attributes.StarRating);
-                    yield return (17, osu.FlashlightRating);
+
+                    if (attributes.Mods.Any(m => m is ModFlashlight))
+                        yield return (17, osu.FlashlightRating);
 
                     break;
 
