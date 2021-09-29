@@ -23,6 +23,7 @@ namespace osu.Server.DifficultyCalculator
                     yield return (7, osu.ApproachRate);
                     yield return (9, osu.MaxCombo);
                     yield return (11, attributes.StarRating);
+                    yield return (17, osu.FlashlightRating);
 
                     break;
 
