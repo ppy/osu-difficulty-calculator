@@ -7,7 +7,7 @@
 
     <ItemGroup>
       <PackageReference Include="Dapper" Version="2.0.90" />
-      <PackageReference Include="DogStatsD-CSharp-Client" Version="6.0.0" />
+      <PackageReference Include="DogStatsD-CSharp-Client" Version="7.0.0" />
       <PackageReference Include="ppy.osu.Server.OsuQueueProcessor" Version="2021.615.0 " />
     </ItemGroup>
 
