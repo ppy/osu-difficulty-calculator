@@ -29,6 +29,8 @@ namespace osu.Server.DifficultyCalculator
                     if (attributes.Mods.Any(m => m is ModFlashlight))
                         yield return (17, osu.FlashlightRating);
 
+                    yield return (19, osu.SliderFactor);
+
                     break;
 
                 case TaikoDifficultyAttributes taiko:
