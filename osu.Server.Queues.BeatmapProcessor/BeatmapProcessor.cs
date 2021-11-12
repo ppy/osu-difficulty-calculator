@@ -31,7 +31,7 @@ namespace osu.Server.Queues.BeatmapProcessor
                         throw new Exception($"Couldn't download beatmap for {beatmapId}");
 
                     // ensure the correct online id is set
-                    working.BeatmapInfo.OnlineBeatmapID = (int)beatmapId;
+                    working.BeatmapInfo.OnlineID = (int)beatmapId;
 
                     calculator.ProcessBeatmap(working);
                 }

@@ -42,9 +42,9 @@ namespace osu.Server.DifficultyCalculator
 
         public void ProcessBeatmap(WorkingBeatmap beatmap)
         {
-            Debug.Assert(beatmap.BeatmapInfo.OnlineBeatmapID != null, "beatmap.BeatmapInfo.OnlineBeatmapID != null");
+            Debug.Assert(beatmap.BeatmapInfo.OnlineID != null);
 
-            int beatmapId = beatmap.BeatmapInfo.OnlineBeatmapID.Value;
+            int beatmapId = beatmap.BeatmapInfo.OnlineID.Value;
 
             try
             {

@@ -117,7 +117,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                             var beatmap = BeatmapLoader.GetBeatmap(beatmapId, Verbose, ForceDownload, reporter);
 
                             // ensure the correct online id is set
-                            beatmap.BeatmapInfo.OnlineBeatmapID = beatmapId;
+                            beatmap.BeatmapInfo.OnlineID = beatmapId;
 
                             calc.ProcessBeatmap(beatmap);
                             reporter.Verbose($"Difficulty updated for beatmap {beatmapId}.");
