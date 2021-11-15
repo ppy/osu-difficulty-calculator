@@ -99,7 +99,7 @@ namespace osu.Server.DifficultyCalculator
                 {
                     var parameters = new List<object>();
 
-                    foreach (var mapping in attribute.ToDatabase())
+                    foreach (var mapping in attribute.ToDatabaseAttributes())
                     {
                         parameters.Add(new
                         {
