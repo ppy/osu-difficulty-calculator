@@ -99,14 +99,14 @@ namespace osu.Server.DifficultyCalculator
                 {
                     var parameters = new List<object>();
 
-                    foreach (var mapping in attribute.Map())
+                    foreach (var mapping in attribute.ToDatabaseAttributes())
                     {
                         parameters.Add(new
                         {
                             BeatmapId = beatmapId,
                             Mode = ruleset.RulesetInfo.ID,
                             Mods = (int)legacyMod,
-                            Attribute = mapping.id,
+                            Attribute = mapping.attributeId,
                             Value = Convert.ToSingle(mapping.value)
                         });
                     }
