@@ -128,7 +128,7 @@ namespace osu.Server.DifficultyCalculator
                         OD = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty,
                         HP = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.DrainRate,
                         CS = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize,
-                        BPM = 60000 / beatmap.Beatmap.GetMostCommonBeatLength()
+                        BPM = Math.Round(60000 / beatmap.Beatmap.GetMostCommonBeatLength(), 2)
                     };
 
                     if (AppSettings.INSERT_BEATMAPS)
