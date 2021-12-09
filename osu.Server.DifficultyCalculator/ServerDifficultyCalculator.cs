@@ -120,6 +120,9 @@ namespace osu.Server.DifficultyCalculator
 
                 if (legacyMod == LegacyMods.None && ruleset.RulesetInfo.Equals(beatmap.BeatmapInfo.Ruleset))
                 {
+                    double beatLength = beatmap.Beatmap.GetMostCommonBeatLength();
+                    double bpm = beatLength > 0 ? 60000 / beatLength : 0;
+
                     object param = new
                     {
                         BeatmapId = beatmapId,
@@ -128,7 +131,7 @@ namespace osu.Server.DifficultyCalculator
                         OD = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty,
                         HP = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.DrainRate,
                         CS = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize,
-                        BPM = Math.Round(60000 / beatmap.Beatmap.GetMostCommonBeatLength(), 2)
+                        BPM = Math.Round(bpm, 2)
                     };
 
                     if (AppSettings.INSERT_BEATMAPS)
