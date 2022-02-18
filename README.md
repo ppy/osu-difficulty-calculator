@@ -6,10 +6,10 @@ For more detailed information see per-component READMEs.
 
 # Requirements
 
-- A desktop platform that can compile .NET 4.7.1. We recommend using [Visual Studio Community Edition](https://www.visualstudio.com/) (Windows), [Visual Studio for Mac](https://www.visualstudio.com/vs/visual-studio-mac/) (macOS) or [MonoDevelop](http://www.monodevelop.com/download/) (Linux), all of which are free. [Visual Studio Code](https://code.visualstudio.com/) may also be used but requires further setup steps which are not covered here.
+- A desktop platform that can compile .NET 6.0. We recommend using [Visual Studio Community Edition](https://www.visualstudio.com/) (Windows), [Visual Studio for Mac](https://www.visualstudio.com/vs/visual-studio-mac/) (macOS) or [MonoDevelop](http://www.monodevelop.com/download/) (Linux), all of which are free. [Visual Studio Code](https://code.visualstudio.com/) may also be used but requires further setup steps which are not covered here.
 
 # Getting Started
-- Clone the repository including submodules (`git clone --recurse-submodules https://github.com/ppy/osu-server`)
+- Clone the repository (`git clone https://github.com/ppy/osu-server`)
 - Build in your IDE of choice (recommended IDEs automatically restore nuget packages; if you are using an alternative make sure to `nuget restore`)
 
 # Contributing
