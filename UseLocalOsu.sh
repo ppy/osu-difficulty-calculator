@@ -5,7 +5,7 @@
 
 
 CSPROJ="osu.Server.DifficultyCalculator/osu.Server.DifficultyCalculator.csproj"
-SLN="osu.Server.sln"
+SLN="osu.Server.DifficultyCalculator.sln"
 
 DEPENDENCIES="../osu/osu.Game.Rulesets.Catch/osu.Game.Rulesets.Catch.csproj
     ../osu/osu.Game.Rulesets.Mania/osu.Game.Rulesets.Mania.csproj
