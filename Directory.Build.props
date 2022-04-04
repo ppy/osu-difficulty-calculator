@@ -1,15 +1,14 @@
-<!-- Contains required properties for osu!server projects. -->
 <Project>
   <PropertyGroup Label="C#">
     <LangVersion>7</LangVersion>
   </PropertyGroup>
   <ItemGroup Label="License">
-    <None Include="..\osu-server.licenseheader">
-      <Link>osu-server.licenseheader</Link>
+    <None Include="$(MSBuildThisFileDirectory)osu-difficulty-calculator.licenseheader">
+      <Link>osu-difficulty-calculator.licenseheader</Link>
     </None>
   </ItemGroup>
   <PropertyGroup Label="Project">
     <Company>ppy Pty Ltd</Company>
-    <copyright>Copyright (c) 2019 ppy Pty Ltd</copyright>
+    <Copyright>Copyright (c) 2022 ppy Pty Ltd</Copyright>
   </PropertyGroup>
 </Project>

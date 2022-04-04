@@ -1,6 +1,6 @@
-# osu!server [![dev chat](https://discordapp.com/api/guilds/188630481301012481/widget.png?style=shield)](https://discord.gg/ppy)
+# osu-difficulty-calculator [![dev chat](https://discordapp.com/api/guilds/188630481301012481/widget.png?style=shield)](https://discord.gg/ppy)
 
-Server-side components for [osu!](https://osu.ppy.sh).
+Difficulty calculation server for [osu!](https://osu.ppy.sh).
 
 For more detailed information see per-component READMEs.
 
@@ -9,12 +9,12 @@ For more detailed information see per-component READMEs.
 - A desktop platform that can compile .NET 6.0. We recommend using [Visual Studio Community Edition](https://www.visualstudio.com/) (Windows), [Visual Studio for Mac](https://www.visualstudio.com/vs/visual-studio-mac/) (macOS) or [MonoDevelop](http://www.monodevelop.com/download/) (Linux), all of which are free. [Visual Studio Code](https://code.visualstudio.com/) may also be used but requires further setup steps which are not covered here.
 
 # Getting Started
-- Clone the repository (`git clone https://github.com/ppy/osu-server`)
+- Clone the repository (`git clone https://github.com/ppy/osu-difficulty-calculator`)
 - Build in your IDE of choice (recommended IDEs automatically restore nuget packages; if you are using an alternative make sure to `nuget restore`)
 
 # Contributing
 
-Contributions can be made via pull requests to this repository. We hope to credit and reward larger contributions via a [bounty system](https://www.bountysource.com/teams/ppy). If you're unsure of what you can help with, check out the [list of open issues](https://github.com/ppy/osu-server/issues).
+Contributions can be made via pull requests to this repository. We hope to credit and reward larger contributions via a [bounty system](https://www.bountysource.com/teams/ppy). If you're unsure of what you can help with, check out the [list of open issues](https://github.com/ppy/osu-osu-difficulty-calculator/issues).
 
 Note that while we already have certain standards in place, nothing is set in stone. If you have an issue with the way code is structured; with any libraries we are using; with any processes involved with contributing, *please* bring it up. I welcome all feedback so we can make contributing to this project as pain-free as possible.
 
