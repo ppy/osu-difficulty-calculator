@@ -49,7 +49,7 @@ namespace osu.Server.DifficultyCalculator
                     break;
 
                 case ManiaDifficultyAttributes mania:
-                    // Todo: Mania doesn't output MaxCombo attribute for some reason.
+                    yield return (9, mania.MaxCombo);
                     yield return (11, attributes.StarRating);
                     yield return (13, mania.GreatHitWindow);
                     yield return (15, mania.ScoreMultiplier);
