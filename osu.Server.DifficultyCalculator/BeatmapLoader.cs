@@ -93,7 +93,7 @@ namespace osu.Server.DifficultyCalculator
             {
                 this.beatmap = beatmap;
 
-                switch (beatmap.BeatmapInfo.Ruleset.OnlineID)
+                switch (beatmap.BeatmapInfo.RulesetID)
                 {
                     case 0:
                         beatmap.BeatmapInfo.Ruleset = new OsuRuleset().RulesetInfo;

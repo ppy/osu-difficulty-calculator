@@ -19,15 +19,15 @@ namespace osu.Server.DifficultyCalculator
             switch (attributes)
             {
                 case OsuDifficultyAttributes osu:
-                    yield return (1, osu.AimDifficulty);
-                    yield return (3, osu.SpeedDifficulty);
+                    yield return (1, osu.AimStrain);
+                    yield return (3, osu.SpeedStrain);
                     yield return (5, osu.OverallDifficulty);
                     yield return (7, osu.ApproachRate);
                     yield return (9, osu.MaxCombo);
                     yield return (11, attributes.StarRating);
 
                     if (attributes.Mods.Any(m => m is ModFlashlight))
-                        yield return (17, osu.FlashlightDifficulty);
+                        yield return (17, osu.FlashlightRating);
 
                     yield return (19, osu.SliderFactor);
 
