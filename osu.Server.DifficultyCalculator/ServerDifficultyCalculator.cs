@@ -32,7 +32,7 @@ namespace osu.Server.DifficultyCalculator
             if (rulesetIds != null)
             {
                 foreach (int id in rulesetIds)
-                    processableRulesets.Add(available_rulesets.Single(r => r.RulesetInfo.ID == id));
+                    processableRulesets.Add(available_rulesets.Single(r => r.RulesetInfo.OnlineID == id));
             }
             else
             {
@@ -42,9 +42,9 @@ namespace osu.Server.DifficultyCalculator
 
         public void ProcessBeatmap(WorkingBeatmap beatmap)
         {
-            Debug.Assert(beatmap.BeatmapInfo.OnlineID != null);
+            Debug.Assert(beatmap.BeatmapInfo.OnlineID > 0);
 
-            int beatmapId = beatmap.BeatmapInfo.OnlineID.Value;
+            int beatmapId = beatmap.BeatmapInfo.OnlineID;
 
             try
             {
@@ -59,12 +59,12 @@ namespace osu.Server.DifficultyCalculator
 
                 using (var conn = Database.GetConnection())
                 {
-                    if (processConverts && beatmap.BeatmapInfo.RulesetID == 0)
+                    if (processConverts && beatmap.BeatmapInfo.Ruleset.OnlineID == 0)
                     {
                         foreach (var ruleset in processableRulesets)
                             computeDifficulty(beatmapId, beatmap, ruleset, conn);
                     }
-                    else if (processableRulesets.Any(r => r.RulesetInfo.ID == beatmap.BeatmapInfo.RulesetID))
+                    else if (processableRulesets.Any(r => r.RulesetInfo.OnlineID == beatmap.BeatmapInfo.Ruleset.OnlineID))
                         computeDifficulty(beatmapId, beatmap, beatmap.BeatmapInfo.Ruleset.CreateInstance(), conn);
                 }
             }
@@ -76,7 +76,7 @@ namespace osu.Server.DifficultyCalculator
 
         private void computeDifficulty(int beatmapId, WorkingBeatmap beatmap, Ruleset ruleset, [CanBeNull] MySqlConnection conn)
         {
-            foreach (var attribute in ruleset.CreateDifficultyCalculator(beatmap).CalculateAll())
+            foreach (var attribute in ruleset.CreateDifficultyCalculator(beatmap).CalculateAllLegacyCombinations())
             {
                 if (dryRun)
                     continue;
@@ -90,7 +90,7 @@ namespace osu.Server.DifficultyCalculator
                     new
                     {
                         BeatmapId = beatmapId,
-                        Mode = ruleset.RulesetInfo.ID,
+                        Mode = ruleset.RulesetInfo.OnlineID,
                         Mods = (int)legacyMod,
                         Diff = attribute.StarRating
                     });
@@ -104,7 +104,7 @@ namespace osu.Server.DifficultyCalculator
                         parameters.Add(new
                         {
                             BeatmapId = beatmapId,
-                            Mode = ruleset.RulesetInfo.ID,
+                            Mode = ruleset.RulesetInfo.OnlineID,
                             Mods = (int)legacyMod,
                             Attribute = mapping.id,
                             Value = Convert.ToSingle(mapping.value)
@@ -127,10 +127,10 @@ namespace osu.Server.DifficultyCalculator
                     {
                         BeatmapId = beatmapId,
                         Diff = attribute.StarRating,
-                        AR = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.ApproachRate,
-                        OD = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty,
-                        HP = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.DrainRate,
-                        CS = beatmap.Beatmap.BeatmapInfo.BaseDifficulty.CircleSize,
+                        AR = beatmap.Beatmap.BeatmapInfo.Difficulty.ApproachRate,
+                        OD = beatmap.Beatmap.BeatmapInfo.Difficulty.OverallDifficulty,
+                        HP = beatmap.Beatmap.BeatmapInfo.Difficulty.DrainRate,
+                        CS = beatmap.Beatmap.BeatmapInfo.Difficulty.CircleSize,
                         BPM = Math.Round(bpm, 2)
                     };
 
