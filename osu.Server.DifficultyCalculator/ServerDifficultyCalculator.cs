@@ -78,7 +78,7 @@ namespace osu.Server.DifficultyCalculator
                 if (dryRun)
                     continue;
 
-                var legacyMod = attribute.Mods.ToLegacy();
+                LegacyMods legacyMods = ruleset.ConvertToLegacyMods(attribute.Mods);
 
                 conn?.Execute(
                     "INSERT INTO `osu_beatmap_difficulty` (`beatmap_id`, `mode`, `mods`, `diff_unified`) "
@@ -88,7 +88,7 @@ namespace osu.Server.DifficultyCalculator
                     {
                         BeatmapId = beatmapId,
                         Mode = ruleset.RulesetInfo.OnlineID,
-                        Mods = (int)legacyMod,
+                        Mods = (int)legacyMods,
                         Diff = attribute.StarRating
                     });
 
@@ -102,7 +102,7 @@ namespace osu.Server.DifficultyCalculator
                         {
                             BeatmapId = beatmapId,
                             Mode = ruleset.RulesetInfo.OnlineID,
-                            Mods = (int)legacyMod,
+                            Mods = (int)legacyMods,
                             Attribute = mapping.attributeId,
                             Value = Convert.ToSingle(mapping.value)
                         });
@@ -115,7 +115,7 @@ namespace osu.Server.DifficultyCalculator
                         parameters.ToArray());
                 }
 
-                if (legacyMod == LegacyMods.None && ruleset.RulesetInfo.Equals(beatmap.BeatmapInfo.Ruleset))
+                if (legacyMods == LegacyMods.None && ruleset.RulesetInfo.Equals(beatmap.BeatmapInfo.Ruleset))
                 {
                     double beatLength = beatmap.Beatmap.GetMostCommonBeatLength();
                     double bpm = beatLength > 0 ? 60000 / beatLength : 0;
