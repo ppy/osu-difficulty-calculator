@@ -1,6 +1,7 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
+using System;
 using System.Collections.Generic;
 using McMaster.Extensions.CommandLineUtils;
 
@@ -10,7 +11,7 @@ namespace osu.Server.DifficultyCalculator.Commands
     public class BeatmapsCommand : CalculatorCommand
     {
         [Argument(0, "beatmap", Description = "One or more beatmap ids to calculate the difficulty for.")]
-        public int[] BeatmapIds { get; set; }
+        public int[] BeatmapIds { get; set; } = Array.Empty<int>();
 
         protected override IEnumerable<int> GetBeatmaps() => BeatmapIds;
     }

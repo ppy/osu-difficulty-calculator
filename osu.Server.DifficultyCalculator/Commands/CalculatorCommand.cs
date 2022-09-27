@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,7 +19,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                                                                                                     + "1 - osu!taiko\n"
                                                                                                     + "2 - osu!catch\n"
                                                                                                     + "3 - osu!mania")]
-        public int[] Rulesets { get; set; }
+        public int[]? Rulesets { get; set; }
 
         [Option(CommandOptionType.NoValue, Template = "-ac|--allow-converts", Description = "Attempt to convert beatmaps to other rulesets to calculate difficulty.")]
         public bool Converts { get; set; } = false;
@@ -38,14 +37,13 @@ namespace osu.Server.DifficultyCalculator.Commands
         public bool Quiet { get; set; }
 
         [Option(CommandOptionType.SingleValue, Template = "-l|--log-file", Description = "The file to log output to.")]
-        public string LogFile { get; set; }
+        public string? LogFile { get; set; }
 
         [Option(CommandOptionType.NoValue, Template = "-dry|--dry-run", Description = "Whether to run the process without writing to the database.")]
         public bool DryRun { get; set; }
 
-        private int[] threadBeatmapIds;
-
-        private IReporter reporter;
+        private int[] threadBeatmapIds = null!;
+        private IReporter reporter = null!;
 
         private int totalBeatmaps;
         private int processedBeatmaps;
@@ -93,7 +91,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                 }
             }
 
-            var beatmaps = new ConcurrentQueue<int>(GetBeatmaps() ?? Enumerable.Empty<int>());
+            var beatmaps = new ConcurrentQueue<int>(GetBeatmaps());
 
             totalBeatmaps = beatmaps.Count;
 
@@ -176,7 +174,7 @@ namespace osu.Server.DifficultyCalculator.Commands
             reporter.Output($"Threads {threadsString}");
         }
 
-        protected string CombineSqlConditions(params string[] conditions)
+        protected string CombineSqlConditions(params string?[] conditions)
         {
             var builder = new StringBuilder();
 

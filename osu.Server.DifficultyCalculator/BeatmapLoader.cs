@@ -19,7 +19,7 @@ namespace osu.Server.DifficultyCalculator
 {
     public static class BeatmapLoader
     {
-        public static WorkingBeatmap GetBeatmap(int beatmapId, bool verbose = false, bool forceDownload = true, IReporter reporter = null)
+        public static WorkingBeatmap? GetBeatmap(int beatmapId, bool verbose = false, bool forceDownload = true, IReporter? reporter = null)
         {
             string fileLocation = Path.Combine(AppSettings.BEATMAPS_PATH, beatmapId.ToString()) + ".osu";
 
@@ -114,10 +114,10 @@ namespace osu.Server.DifficultyCalculator
             }
 
             protected override IBeatmap GetBeatmap() => beatmap;
-            protected override Texture GetBackground() => null;
-            protected override Track GetBeatmapTrack() => null;
-            protected override ISkin GetSkin() => null;
-            public override Stream GetStream(string storagePath) => null;
+            protected override Texture? GetBackground() => null;
+            protected override Track? GetBeatmapTrack() => null;
+            protected override ISkin? GetSkin() => null;
+            public override Stream? GetStream(string storagePath) => null;
         }
     }
 }

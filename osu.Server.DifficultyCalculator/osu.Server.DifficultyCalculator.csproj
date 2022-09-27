@@ -4,7 +4,8 @@
         <TargetFramework>net6.0</TargetFramework>
         <AssemblyName>osu.Server.DifficultyCalculator</AssemblyName>
         <RootNamespace>osu.Server.DifficultyCalculator</RootNamespace>
-        <LangVersion>7.1</LangVersion>
+        <LangVersion>latest</LangVersion>
+        <Nullable>enable</Nullable>
         <ServerGarbageCollection>true</ServerGarbageCollection>
         <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
     </PropertyGroup>

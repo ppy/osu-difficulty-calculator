@@ -21,7 +21,7 @@ namespace osu.Server.DifficultyCalculator
 
         public static MySqlConnection GetSlaveConnection()
         {
-            string host = Environment.GetEnvironmentVariable("DB_HOST_SLAVE");
+            string? host = Environment.GetEnvironmentVariable("DB_HOST_SLAVE");
 
             if (string.IsNullOrEmpty(host))
                 // fallback to master connection if no slave host has been specified.

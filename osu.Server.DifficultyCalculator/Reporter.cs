@@ -21,10 +21,10 @@ namespace osu.Server.DifficultyCalculator
 
         private readonly object writeLock = new object();
         private readonly IConsole console;
-        private readonly StreamWriter fileWriter;
+        private readonly StreamWriter? fileWriter;
         private readonly StreamWriter errorFileWriter;
 
-        public Reporter(IConsole console, string file = null)
+        public Reporter(IConsole console, string? file = null)
         {
             this.console = console;
 

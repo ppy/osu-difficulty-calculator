@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Dapper;
-using JetBrains.Annotations;
 using MySqlConnector;
 using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Legacy;
@@ -23,7 +22,7 @@ namespace osu.Server.DifficultyCalculator
         private readonly bool dryRun;
         private readonly List<Ruleset> processableRulesets = new List<Ruleset>();
 
-        public ServerDifficultyCalculator(int[] rulesetIds = null, bool processConverts = true, bool dryRun = false)
+        public ServerDifficultyCalculator(int[]? rulesetIds = null, bool processConverts = true, bool dryRun = false)
         {
             this.processConverts = processConverts;
             this.dryRun = dryRun;
@@ -71,7 +70,7 @@ namespace osu.Server.DifficultyCalculator
             }
         }
 
-        private void computeDifficulty(int beatmapId, WorkingBeatmap beatmap, Ruleset ruleset, [CanBeNull] MySqlConnection conn)
+        private void computeDifficulty(int beatmapId, WorkingBeatmap beatmap, Ruleset ruleset, MySqlConnection? conn)
         {
             foreach (var attribute in ruleset.CreateDifficultyCalculator(beatmap).CalculateAllLegacyCombinations())
             {
@@ -162,7 +161,7 @@ namespace osu.Server.DifficultyCalculator
                 {
                     var assembly = Assembly.LoadFrom(file);
                     Type type = assembly.GetTypes().First(t => t.IsPublic && t.IsSubclassOf(typeof(Ruleset)));
-                    rulesetsToProcess.Add((Ruleset)Activator.CreateInstance(type));
+                    rulesetsToProcess.Add((Ruleset)Activator.CreateInstance(type)!);
                 }
                 catch
                 {
