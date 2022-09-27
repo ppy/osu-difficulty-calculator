@@ -122,7 +122,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                         }
                         catch (Exception e)
                         {
-                            reporter.Error($"{beatmapId} failed with {e}");
+                            reporter.Error($"{beatmapId} failed with: {e.Message}");
                         }
 
                         Interlocked.Increment(ref processedBeatmaps);

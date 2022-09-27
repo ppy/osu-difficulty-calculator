@@ -1,6 +1,7 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
+using System;
 using System.IO;
 using McMaster.Extensions.CommandLineUtils;
 using osu.Framework.Audio.Track;
@@ -19,7 +20,7 @@ namespace osu.Server.DifficultyCalculator
 {
     public static class BeatmapLoader
     {
-        public static WorkingBeatmap? GetBeatmap(int beatmapId, bool verbose = false, bool forceDownload = true, IReporter? reporter = null)
+        public static WorkingBeatmap GetBeatmap(int beatmapId, bool verbose = false, bool forceDownload = true, IReporter? reporter = null)
         {
             string fileLocation = Path.Combine(AppSettings.BEATMAPS_PATH, beatmapId.ToString()) + ".osu";
 
@@ -49,6 +50,9 @@ namespace osu.Server.DifficultyCalculator
 
                 var stream = req.ResponseStream;
 
+                if (stream.Length == 0)
+                    throw new Exception("Beatmap download failed.");
+
                 if (AppSettings.SAVE_DOWNLOADED)
                 {
                     using (var fileStream = File.Create(fileLocation))
@@ -61,7 +65,10 @@ namespace osu.Server.DifficultyCalculator
                 return new LoaderWorkingBeatmap(stream);
             }
 
-            return !File.Exists(fileLocation) ? null : new LoaderWorkingBeatmap(fileLocation);
+            if (!File.Exists(fileLocation))
+                throw new Exception("Beatmap file does not exist and was not downloaded.");
+
+            return new LoaderWorkingBeatmap(fileLocation);
         }
 
         private class LoaderWorkingBeatmap : WorkingBeatmap
