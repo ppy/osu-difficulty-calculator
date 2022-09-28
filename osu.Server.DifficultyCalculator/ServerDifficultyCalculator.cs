@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Dapper;
-using JetBrains.Annotations;
 using MySqlConnector;
 using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Legacy;
@@ -23,7 +22,7 @@ namespace osu.Server.DifficultyCalculator
         private readonly bool dryRun;
         private readonly List<Ruleset> processableRulesets = new List<Ruleset>();
 
-        public ServerDifficultyCalculator(int[] rulesetIds = null, bool processConverts = true, bool dryRun = false)
+        public ServerDifficultyCalculator(int[]? rulesetIds = null, bool processConverts = true, bool dryRun = false)
         {
             this.processConverts = processConverts;
             this.dryRun = dryRun;
@@ -49,7 +48,7 @@ namespace osu.Server.DifficultyCalculator
                 {
                     using (var conn = Database.GetSlaveConnection())
                     {
-                        if (conn?.QuerySingleOrDefault<int>("SELECT `approved` FROM `osu_beatmaps` WHERE `beatmap_id` = @BeatmapId", new { BeatmapId = beatmapId }) > 0)
+                        if (conn.QuerySingleOrDefault<int>("SELECT `approved` FROM `osu_beatmaps` WHERE `beatmap_id` = @BeatmapId", new { BeatmapId = beatmapId }) > 0)
                             throw new ArgumentException($"Ranked beatmap {beatmapId} has 0 hitobjects!");
                     }
                 }
@@ -71,7 +70,7 @@ namespace osu.Server.DifficultyCalculator
             }
         }
 
-        private void computeDifficulty(int beatmapId, WorkingBeatmap beatmap, Ruleset ruleset, [CanBeNull] MySqlConnection conn)
+        private void computeDifficulty(int beatmapId, WorkingBeatmap beatmap, Ruleset ruleset, MySqlConnection conn)
         {
             foreach (var attribute in ruleset.CreateDifficultyCalculator(beatmap).CalculateAllLegacyCombinations())
             {
@@ -80,7 +79,7 @@ namespace osu.Server.DifficultyCalculator
 
                 LegacyMods legacyMods = ruleset.ConvertToLegacyMods(attribute.Mods);
 
-                conn?.Execute(
+                conn.Execute(
                     "INSERT INTO `osu_beatmap_difficulty` (`beatmap_id`, `mode`, `mods`, `diff_unified`) "
                     + "VALUES (@BeatmapId, @Mode, @Mods, @Diff) "
                     + "ON DUPLICATE KEY UPDATE `diff_unified` = @Diff",
@@ -108,7 +107,7 @@ namespace osu.Server.DifficultyCalculator
                         });
                     }
 
-                    conn?.Execute(
+                    conn.Execute(
                         "INSERT INTO `osu_beatmap_difficulty_attribs` (`beatmap_id`, `mode`, `mods`, `attrib_id`, `value`) "
                         + "VALUES (@BeatmapId, @Mode, @Mods, @Attribute, @Value) "
                         + "ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
@@ -133,7 +132,7 @@ namespace osu.Server.DifficultyCalculator
 
                     if (AppSettings.INSERT_BEATMAPS)
                     {
-                        conn?.Execute(
+                        conn.Execute(
                             "INSERT INTO `osu_beatmaps` (`beatmap_id`, `difficultyrating`, `diff_approach`, `diff_overall`, `diff_drain`, `diff_size`, `bpm`) "
                             + "VALUES (@BeatmapId, @Diff, @AR, @OD, @HP, @CS, @BPM) "
                             + "ON DUPLICATE KEY UPDATE `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM",
@@ -141,7 +140,7 @@ namespace osu.Server.DifficultyCalculator
                     }
                     else
                     {
-                        conn?.Execute(
+                        conn.Execute(
                             "UPDATE `osu_beatmaps` SET `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM "
                             + "WHERE `beatmap_id` = @BeatmapId",
                             param);
@@ -162,7 +161,7 @@ namespace osu.Server.DifficultyCalculator
                 {
                     var assembly = Assembly.LoadFrom(file);
                     Type type = assembly.GetTypes().First(t => t.IsPublic && t.IsSubclassOf(typeof(Ruleset)));
-                    rulesetsToProcess.Add((Ruleset)Activator.CreateInstance(type));
+                    rulesetsToProcess.Add((Ruleset)Activator.CreateInstance(type)!);
                 }
                 catch
                 {

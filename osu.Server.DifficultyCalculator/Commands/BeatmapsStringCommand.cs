@@ -11,7 +11,7 @@ namespace osu.Server.DifficultyCalculator.Commands
     public class BeatmapsStringCommand : CalculatorCommand
     {
         [Argument(0, "beatmaps", Description = "A comma-separated list of beatmap ids.")]
-        public string Beatmaps { get; set; }
+        public string Beatmaps { get; set; } = string.Empty;
 
         protected override IEnumerable<int> GetBeatmaps() => Beatmaps.Split(',').Select(int.Parse);
     }

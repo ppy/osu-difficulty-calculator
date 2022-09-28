@@ -27,8 +27,6 @@ namespace osu.Server.Queues.BeatmapProcessor
                 foreach (long beatmapId in beatmaps)
                 {
                     var working = BeatmapLoader.GetBeatmap((int)beatmapId);
-                    if (working == null)
-                        throw new Exception($"Couldn't download beatmap for {beatmapId}");
 
                     // ensure the correct online id is set
                     working.BeatmapInfo.OnlineID = (int)beatmapId;
