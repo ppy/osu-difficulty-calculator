@@ -2,7 +2,6 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System.Collections.Generic;
-using System.Linq;
 using Dapper;
 using McMaster.Extensions.CommandLineUtils;
 
@@ -21,9 +20,6 @@ namespace osu.Server.DifficultyCalculator.Commands
         {
             using (var conn = Database.GetSlaveConnection())
             {
-                if (conn == null)
-                    return Enumerable.Empty<int>();
-
                 var condition = CombineSqlConditions(
                     RankedOnly ? "`approved` >= 1" : null,
                     $"`beatmap_id` >= {Marker}",
