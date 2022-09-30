@@ -12,7 +12,11 @@ namespace osu.Server.Queues.BeatmapProcessor
         private readonly ServerDifficultyCalculator calculator;
 
         public BeatmapProcessor()
-            : base(new QueueConfiguration { InputQueueName = "beatmap" })
+            : base(new QueueConfiguration
+            {
+                InputQueueName = "beatmap",
+                MaxInFlightItems = 4,
+            })
         {
             calculator = new ServerDifficultyCalculator(new[] { 0, 1, 2, 3 });
         }
