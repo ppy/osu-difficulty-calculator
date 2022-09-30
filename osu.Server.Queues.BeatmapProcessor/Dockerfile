@@ -13,7 +13,7 @@ COPY . ./
 WORKDIR /app/osu.Server.Queues.BeatmapProcessor
 RUN dotnet publish -c Release -o out
 # get rid of bloat
-RUN rm -rf ./out/runtimes ./out/osu.Game.Resources.dll ./out/osuTK.dll
+RUN rm -rf ./out/runtimes ./out/osu.Game.Resources.dll
 
 # Build runtime image
 FROM mcr.microsoft.com/dotnet/runtime:6.0
