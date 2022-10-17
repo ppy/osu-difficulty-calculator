@@ -6,11 +6,7 @@ For more detailed information see per-component READMEs.
 
 # Current Versions
 
-The `master` branch of this (and other) repositories track ongoing developments, and may be newer than what is used for the live osu! systems. If looking to use the correct version for matching live values, the correct versions are:
-
-| `osu-difficulty-calculator` | `osu` |
-| -- | -- |
-| [2022.928.0](https://github.com/ppy/osu-difficulty-calculator/releases/tag/2022.928.0) | [2022.927.0](https://github.com/ppy/osu/releases/tag/2022.927.0) ([nuget](https://www.nuget.org/packages/ppy.osu.Game/2022.927.0)) |
+This is part of a group of projects which are used in live deployments where the deployed version is critical to producing correct results. The `master` branch tracks ongoing developments. If looking to use the correct version for matching live values, please [consult this wiki page](https://github.com/ppy/osu-infrastructure/wiki/Star-Rating-and-Performance-Points) for the latest information.
 
 # Requirements
 
