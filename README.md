@@ -4,6 +4,14 @@ Difficulty calculation server for [osu!](https://osu.ppy.sh).
 
 For more detailed information see per-component READMEs.
 
+# Current Versions
+
+The `master` branch of this (and other) repositories track ongoing developments, and may be newer than what is used for the live osu! systems. If looking to use the correct version for matching live values, the correct versions are:
+
+| `osu-difficulty-calculator` | `osu` |
+| -- | -- |
+| [2022.928.0](https://github.com/ppy/osu-difficulty-calculator/releases/tag/2022.928.0) | [2022.927.0](https://github.com/ppy/osu/releases/tag/2022.927.0) ([nuget](https://www.nuget.org/packages/ppy.osu.Game/2022.927.0)) |
+
 # Requirements
 
 - A desktop platform that can compile .NET 6.0. We recommend using [Visual Studio Community Edition](https://www.visualstudio.com/) (Windows), [Visual Studio for Mac](https://www.visualstudio.com/vs/visual-studio-mac/) (macOS) or [MonoDevelop](http://www.monodevelop.com/download/) (Linux), all of which are free. [Visual Studio Code](https://code.visualstudio.com/) may also be used but requires further setup steps which are not covered here.
@@ -25,3 +33,4 @@ The osu! client code, framework, and server-side components are licensed under t
 Please note that this *does not cover* the usage of the "osu!" or "ppy" branding in any software, resources, advertising or promotion, as this is protected by trademark law.
 
 Please also note that game resources are covered by a separate licence. Please see the [ppy/osu-resources](https://github.com/ppy/osu-resources) repository for clarifications.
+
