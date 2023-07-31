@@ -72,7 +72,10 @@ namespace osu.Server.DifficultyCalculator
 
         private void computeDifficulty(int beatmapId, WorkingBeatmap beatmap, Ruleset ruleset, MySqlConnection conn)
         {
-            foreach (var attribute in ruleset.CreateDifficultyCalculator(beatmap).CalculateAllLegacyCombinations())
+            var difficultyCalculator = ruleset.CreateDifficultyCalculator(beatmap);
+            difficultyCalculator.ComputeLegacyScoringValues = true;
+
+            foreach (var attribute in difficultyCalculator.CalculateAllLegacyCombinations())
             {
                 if (dryRun)
                     continue;
