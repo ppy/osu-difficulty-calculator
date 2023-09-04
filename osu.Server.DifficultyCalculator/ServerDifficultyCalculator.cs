@@ -11,6 +11,7 @@ using MySqlConnector;
 using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Legacy;
 using osu.Game.Rulesets;
+using osu.Game.Rulesets.Scoring.Legacy;
 
 namespace osu.Server.DifficultyCalculator
 {
@@ -38,7 +39,17 @@ namespace osu.Server.DifficultyCalculator
             }
         }
 
-        public void ProcessBeatmap(WorkingBeatmap beatmap)
+        public void ProcessAll(WorkingBeatmap beatmap)
+        {
+            ProcessDifficulty(beatmap);
+            ProcessLegacyAttributes(beatmap);
+        }
+
+        public void ProcessDifficulty(WorkingBeatmap beatmap) => run(beatmap, processDifficulty);
+
+        public void ProcessLegacyAttributes(WorkingBeatmap beatmap) => run(beatmap, processLegacyAttributes);
+
+        private void run(WorkingBeatmap beatmap, Action<int, WorkingBeatmap, Ruleset, MySqlConnection> callback)
         {
             int beatmapId = beatmap.BeatmapInfo.OnlineID;
 
@@ -58,10 +69,10 @@ namespace osu.Server.DifficultyCalculator
                     if (processConverts && beatmap.BeatmapInfo.Ruleset.OnlineID == 0)
                     {
                         foreach (var ruleset in processableRulesets)
-                            computeDifficulty(beatmapId, beatmap, ruleset, conn);
+                            callback(beatmapId, beatmap, ruleset, conn);
                     }
                     else if (processableRulesets.Any(r => r.RulesetInfo.OnlineID == beatmap.BeatmapInfo.Ruleset.OnlineID))
-                        computeDifficulty(beatmapId, beatmap, beatmap.BeatmapInfo.Ruleset.CreateInstance(), conn);
+                        callback(beatmapId, beatmap, beatmap.BeatmapInfo.Ruleset.CreateInstance(), conn);
                 }
             }
             catch (Exception e)
@@ -70,12 +81,9 @@ namespace osu.Server.DifficultyCalculator
             }
         }
 
-        private void computeDifficulty(int beatmapId, WorkingBeatmap beatmap, Ruleset ruleset, MySqlConnection conn)
+        private void processDifficulty(int beatmapId, WorkingBeatmap beatmap, Ruleset ruleset, MySqlConnection conn)
         {
-            var difficultyCalculator = ruleset.CreateDifficultyCalculator(beatmap);
-            difficultyCalculator.ComputeLegacyScoringValues = true;
-
-            foreach (var attribute in difficultyCalculator.CalculateAllLegacyCombinations())
+            foreach (var attribute in ruleset.CreateDifficultyCalculator(beatmap).CalculateAllLegacyCombinations())
             {
                 if (dryRun)
                     continue;
@@ -150,6 +158,28 @@ namespace osu.Server.DifficultyCalculator
                     }
                 }
             }
+        }
+
+        private void processLegacyAttributes(int beatmapId, WorkingBeatmap beatmap, Ruleset ruleset, MySqlConnection conn)
+        {
+            ILegacyScoreSimulator simulator = ((ILegacyRuleset)ruleset).CreateLegacyScoreSimulator();
+            LegacyScoreAttributes attributes = simulator.Simulate(beatmap, beatmap.GetPlayableBeatmap(ruleset.RulesetInfo));
+
+            if (dryRun)
+                return;
+
+            conn.Execute(
+                "INSERT INTO `osu_beatmap_scoring_attribs` (`beatmap_id`, `mode`, `legacy_accuracy_score`, `legacy_combo_score`, `legacy_bonus_score_ratio`) "
+                + "VALUES (@BeatmapId, @Mode, @AccuracyScore, @ComboScore, @BonusScoreRatio) "
+                + "ON DUPLICATE KEY UPDATE `legacy_accuracy_score` = @AccuracyScore, `legacy_combo_score` = @ComboScore, `legacy_bonus_score_ratio` = @BonusScoreRatio",
+                new
+                {
+                    BeatmapId = beatmapId,
+                    Mode = ruleset.RulesetInfo.OnlineID,
+                    AccuracyScore = attributes.AccuracyScore,
+                    ComboScore = attributes.ComboScore,
+                    BonusScoreRatio = attributes.BonusScoreRatio
+                });
         }
 
         private static List<Ruleset> getRulesets()
