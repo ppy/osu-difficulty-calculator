@@ -38,11 +38,6 @@ namespace osu.Server.DifficultyCalculator
         /// </summary>
         public static readonly bool SAVE_DOWNLOADED;
 
-        /// <summary>
-        /// Whether the difficulty command should wait for docker to be ready and perform automatic operations.
-        /// </summary>
-        public static readonly bool RUN_AS_SANDBOX_DOCKER;
-
         static AppSettings()
         {
             INSERT_BEATMAPS = Environment.GetEnvironmentVariable("INSERT_BEATMAPS") == "1";
@@ -52,8 +47,6 @@ namespace osu.Server.DifficultyCalculator
 
             BEATMAPS_PATH = Environment.GetEnvironmentVariable("BEATMAPS_PATH") ?? "osu";
             DOWNLOAD_PATH = Environment.GetEnvironmentVariable("DOWNLOAD_PATH") ?? "https://osu.ppy.sh/osu/{0}";
-
-            RUN_AS_SANDBOX_DOCKER = Environment.GetEnvironmentVariable("DOCKER") == "1";
         }
     }
 }
