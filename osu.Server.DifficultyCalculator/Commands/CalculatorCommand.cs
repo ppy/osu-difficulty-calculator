@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Dapper;
 using McMaster.Extensions.CommandLineUtils;
 
 namespace osu.Server.DifficultyCalculator.Commands
@@ -64,33 +63,6 @@ namespace osu.Server.DifficultyCalculator.Commands
 
             threadBeatmapIds = new int[Concurrency];
 
-            if (AppSettings.RUN_AS_SANDBOX_DOCKER)
-            {
-                reporter.Output("Waiting for database...");
-
-                while (true)
-                {
-                    try
-                    {
-                        bool initialised = false;
-
-                        using (var conn = Database.GetConnection())
-                        {
-                            if (conn.QuerySingle<int>("SELECT `count` FROM `osu_counts` WHERE `name` = 'docker_db_step'") >= 1)
-                                initialised = true;
-                        }
-
-                        if (initialised)
-                            break;
-                    }
-                    catch
-                    {
-                    }
-
-                    Thread.Sleep(1000);
-                }
-            }
-
             var beatmaps = new ConcurrentQueue<int>(GetBeatmaps());
 
             totalBeatmaps = beatmaps.Count;
@@ -135,18 +107,6 @@ namespace osu.Server.DifficultyCalculator.Commands
             using (new Timer(_ => outputProgress(), null, 1000, 1000))
             using (new Timer(_ => outputHealth(), null, 5000, 5000))
                 Task.WaitAll(tasks);
-
-            if (AppSettings.RUN_AS_SANDBOX_DOCKER)
-            {
-                using (var conn = Database.GetConnection())
-                {
-                    conn.Execute("INSERT INTO `osu_counts` (`name`, `count`) VALUES (@Name, @Count) ON DUPLICATE KEY UPDATE `count` = @Count", new
-                    {
-                        Name = "docker_db_step",
-                        Count = 2
-                    });
-                }
-            }
 
             outputProgress();
 
