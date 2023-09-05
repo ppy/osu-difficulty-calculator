@@ -16,12 +16,12 @@ namespace osu.Server.DifficultyCalculator
     [Subcommand(typeof(BeatmapsStringCommand))]
     public class Program
     {
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
             LegacyDifficultyCalculatorBeatmapDecoder.Register();
             ServicePointManager.DefaultConnectionLimit = 128;
 
-            CommandLineApplication.Execute<Program>(args);
+            return CommandLineApplication.Execute<Program>(args);
         }
 
         public int OnExecute(CommandLineApplication app)
