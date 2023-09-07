@@ -11,6 +11,7 @@ using MySqlConnector;
 using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Legacy;
 using osu.Game.Rulesets;
+using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Scoring.Legacy;
 
 namespace osu.Server.DifficultyCalculator
@@ -162,8 +163,11 @@ namespace osu.Server.DifficultyCalculator
 
         private void processLegacyAttributes(int beatmapId, WorkingBeatmap beatmap, Ruleset ruleset, MySqlConnection conn)
         {
+            Mod? classicMod = ruleset.CreateMod<ModClassic>();
+            Mod[] mods = classicMod != null ? new[] { classicMod } : Array.Empty<Mod>();
+
             ILegacyScoreSimulator simulator = ((ILegacyRuleset)ruleset).CreateLegacyScoreSimulator();
-            LegacyScoreAttributes attributes = simulator.Simulate(beatmap, beatmap.GetPlayableBeatmap(ruleset.RulesetInfo));
+            LegacyScoreAttributes attributes = simulator.Simulate(beatmap, beatmap.GetPlayableBeatmap(ruleset.RulesetInfo, mods));
 
             if (dryRun)
                 return;
