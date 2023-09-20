@@ -130,21 +130,22 @@ namespace osu.Server.DifficultyCalculator
                         OD = beatmap.Beatmap.BeatmapInfo.Difficulty.OverallDifficulty,
                         HP = beatmap.Beatmap.BeatmapInfo.Difficulty.DrainRate,
                         CS = beatmap.Beatmap.BeatmapInfo.Difficulty.CircleSize,
-                        BPM = Math.Round(bpm, 2)
+                        BPM = Math.Round(bpm, 2),
+                        MaxCombo = attribute.MaxCombo,
                     };
 
                     if (AppSettings.INSERT_BEATMAPS)
                     {
                         conn.Execute(
-                            "INSERT INTO `osu_beatmaps` (`beatmap_id`, `difficultyrating`, `diff_approach`, `diff_overall`, `diff_drain`, `diff_size`, `bpm`) "
-                            + "VALUES (@BeatmapId, @Diff, @AR, @OD, @HP, @CS, @BPM) "
-                            + "ON DUPLICATE KEY UPDATE `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM",
+                            "INSERT INTO `osu_beatmaps` (`beatmap_id`, `difficultyrating`, `diff_approach`, `diff_overall`, `diff_drain`, `diff_size`, `bpm`, `max_combo`) "
+                            + "VALUES (@BeatmapId, @Diff, @AR, @OD, @HP, @CS, @BPM, @MaxCombo) "
+                            + "ON DUPLICATE KEY UPDATE `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM, `max_combo` = @MaxCombo",
                             param);
                     }
                     else
                     {
                         conn.Execute(
-                            "UPDATE `osu_beatmaps` SET `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM "
+                            "UPDATE `osu_beatmaps` SET `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM , `max_combo` = @MaxCombo"
                             + "WHERE `beatmap_id` = @BeatmapId",
                             param);
                     }
