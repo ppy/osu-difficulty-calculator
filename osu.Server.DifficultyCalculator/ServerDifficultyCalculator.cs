@@ -145,7 +145,7 @@ namespace osu.Server.DifficultyCalculator
                     else
                     {
                         conn.Execute(
-                            "UPDATE `osu_beatmaps` SET `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM , `max_combo` = @MaxCombo"
+                            "UPDATE `osu_beatmaps` SET `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM , `max_combo` = @MaxCombo "
                             + "WHERE `beatmap_id` = @BeatmapId",
                             param);
                     }
