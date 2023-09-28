@@ -34,7 +34,7 @@ namespace osu.Server.Queues.BeatmapProcessor
                     // ensure the correct online id is set
                     working.BeatmapInfo.OnlineID = (int)beatmapId;
 
-                    calculator.ProcessDifficulty(working);
+                    calculator.ProcessAll(working);
                 }
             }
         }
