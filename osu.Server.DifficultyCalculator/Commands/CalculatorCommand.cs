@@ -41,8 +41,8 @@ namespace osu.Server.DifficultyCalculator.Commands
         [Option(CommandOptionType.NoValue, Template = "-dry|--dry-run", Description = "Whether to run the process without writing to the database.")]
         public bool DryRun { get; set; }
 
-        [Option(CommandOptionType.SingleValue, Template = "-pm|--processing-mode", Description = "The mode in which to process beatmaps.")]
-        public ProcessingModes ProcessingMode { get; set; }
+        [Option(CommandOptionType.SingleValue, Template = "--processing-mode", Description = "The mode in which to process beatmaps.")]
+        public ProcessingModes ProcessingMode { get; set; } = ProcessingModes.All;
 
         private int[] threadBeatmapIds = null!;
         private IReporter reporter = null!;
