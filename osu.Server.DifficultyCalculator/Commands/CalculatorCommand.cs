@@ -42,7 +42,7 @@ namespace osu.Server.DifficultyCalculator.Commands
         public bool DryRun { get; set; }
 
         [Option(CommandOptionType.SingleValue, Template = "--processing-mode", Description = "The mode in which to process beatmaps.")]
-        public ProcessingModes ProcessingMode { get; set; } = ProcessingModes.All;
+        public ProcessingMode ProcessingMode { get; set; } = ProcessingMode.All;
 
         private int[] threadBeatmapIds = null!;
         private IReporter reporter = null!;
@@ -94,15 +94,15 @@ namespace osu.Server.DifficultyCalculator.Commands
 
                             switch (ProcessingMode)
                             {
-                                case ProcessingModes.All:
+                                case ProcessingMode.All:
                                     calc.ProcessAll(beatmap);
                                     break;
 
-                                case ProcessingModes.Difficulty:
+                                case ProcessingMode.Difficulty:
                                     calc.ProcessDifficulty(beatmap);
                                     break;
 
-                                case ProcessingModes.ScoreAttributes:
+                                case ProcessingMode.ScoreAttributes:
                                     calc.ProcessLegacyAttributes(beatmap);
                                     break;
                             }
@@ -168,12 +168,5 @@ namespace osu.Server.DifficultyCalculator.Commands
         }
 
         protected abstract IEnumerable<int> GetBeatmaps();
-
-        public enum ProcessingModes
-        {
-            All,
-            Difficulty,
-            ScoreAttributes
-        }
     }
 }
