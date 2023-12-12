@@ -13,6 +13,7 @@ using osu.Game.Beatmaps.Legacy;
 using osu.Game.Rulesets;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Scoring.Legacy;
+using osu.Server.DifficultyCalculator.Commands;
 
 namespace osu.Server.DifficultyCalculator
 {
@@ -40,10 +41,26 @@ namespace osu.Server.DifficultyCalculator
             }
         }
 
-        public void ProcessAll(WorkingBeatmap beatmap)
+        public void Process(WorkingBeatmap beatmap, ProcessingMode mode)
         {
-            ProcessDifficulty(beatmap);
-            ProcessLegacyAttributes(beatmap);
+            switch (mode)
+            {
+                case ProcessingMode.All:
+                    ProcessDifficulty(beatmap);
+                    ProcessLegacyAttributes(beatmap);
+                    break;
+
+                case ProcessingMode.Difficulty:
+                    ProcessDifficulty(beatmap);
+                    break;
+
+                case ProcessingMode.ScoreAttributes:
+                    ProcessLegacyAttributes(beatmap);
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unsupported processing mode supplied");
+            }
         }
 
         public void ProcessDifficulty(WorkingBeatmap beatmap) => run(beatmap, processDifficulty);
