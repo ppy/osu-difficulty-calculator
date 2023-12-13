@@ -3,21 +3,24 @@
 
 using Dapper;
 using osu.Server.DifficultyCalculator;
+using osu.Server.DifficultyCalculator.Commands;
 using osu.Server.QueueProcessor;
 
 namespace osu.Server.Queues.BeatmapProcessor
 {
     internal class BeatmapProcessor : QueueProcessor<BeatmapItem>
     {
+        private readonly ProcessingMode processingMode;
         private readonly ServerDifficultyCalculator calculator;
 
-        public BeatmapProcessor()
+        public BeatmapProcessor(ProcessingMode processingMode, string queueName)
             : base(new QueueConfiguration
             {
-                InputQueueName = "beatmap",
+                InputQueueName = queueName,
                 MaxInFlightItems = 4,
             })
         {
+            this.processingMode = processingMode;
             calculator = new ServerDifficultyCalculator(new[] { 0, 1, 2, 3 });
         }
 
@@ -34,7 +37,7 @@ namespace osu.Server.Queues.BeatmapProcessor
                     // ensure the correct online id is set
                     working.BeatmapInfo.OnlineID = (int)beatmapId;
 
-                    calculator.ProcessAll(working);
+                    calculator.Process(working, processingMode);
                 }
             }
         }
