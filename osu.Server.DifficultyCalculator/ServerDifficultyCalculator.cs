@@ -191,16 +191,18 @@ namespace osu.Server.DifficultyCalculator
                 return;
 
             conn.Execute(
-                "INSERT INTO `osu_beatmap_scoring_attribs` (`beatmap_id`, `mode`, `legacy_accuracy_score`, `legacy_combo_score`, `legacy_bonus_score_ratio`) "
-                + "VALUES (@BeatmapId, @Mode, @AccuracyScore, @ComboScore, @BonusScoreRatio) "
-                + "ON DUPLICATE KEY UPDATE `legacy_accuracy_score` = @AccuracyScore, `legacy_combo_score` = @ComboScore, `legacy_bonus_score_ratio` = @BonusScoreRatio",
+                "INSERT INTO `osu_beatmap_scoring_attribs` (`beatmap_id`, `mode`, `legacy_accuracy_score`, `legacy_combo_score`, `legacy_bonus_score_ratio`, `legacy_bonus_score`, `max_combo`) "
+                + "VALUES (@BeatmapId, @Mode, @AccuracyScore, @ComboScore, @BonusScoreRatio, @BonusScore, @MaxCombo) "
+                + "ON DUPLICATE KEY UPDATE `legacy_accuracy_score` = @AccuracyScore, `legacy_combo_score` = @ComboScore, `legacy_bonus_score_ratio` = @BonusScoreRatio, `legacy_bonus_score` = @BonusScore, `max_combo` = @MaxCombo",
                 new
                 {
                     BeatmapId = beatmapId,
                     Mode = ruleset.RulesetInfo.OnlineID,
                     AccuracyScore = attributes.AccuracyScore,
                     ComboScore = attributes.ComboScore,
-                    BonusScoreRatio = attributes.BonusScoreRatio
+                    BonusScoreRatio = attributes.BonusScoreRatio,
+                    BonusScore = attributes.BonusScore,
+                    MaxCombo = attributes.MaxCombo
                 });
         }
 
