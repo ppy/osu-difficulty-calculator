@@ -10,7 +10,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Dapper" Version="2.0.151" />
+      <PackageReference Include="Dapper" Version="2.1.24" />
       <PackageReference Include="ppy.osu.Server.OsuQueueProcessor" Version="2023.1207.0" />
     </ItemGroup>
 
