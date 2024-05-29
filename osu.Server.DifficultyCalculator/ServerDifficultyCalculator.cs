@@ -183,9 +183,6 @@ namespace osu.Server.DifficultyCalculator
 
         private void processLegacyAttributes(ProcessableItem item, MySqlConnection conn)
         {
-            if (!item.Ranked)
-                return;
-
             Mod? classicMod = item.Ruleset.CreateMod<ModClassic>();
             Mod[] mods = classicMod != null ? new[] { classicMod } : Array.Empty<Mod>();
 
