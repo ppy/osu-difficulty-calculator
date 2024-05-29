@@ -71,9 +71,11 @@ namespace osu.Server.DifficultyCalculator
         {
             try
             {
+                bool ranked;
+
                 using (var conn = Database.GetSlaveConnection())
                 {
-                    bool ranked = conn.QuerySingleOrDefault<int>("SELECT `approved` FROM `osu_beatmaps` WHERE `beatmap_id` = @BeatmapId", new
+                    ranked = conn.QuerySingleOrDefault<int>("SELECT `approved` FROM `osu_beatmaps` WHERE `beatmap_id` = @BeatmapId", new
                     {
                         BeatmapId = beatmap.BeatmapInfo.OnlineID
                     }) > 0;
@@ -87,10 +89,10 @@ namespace osu.Server.DifficultyCalculator
                     if (processConverts && beatmap.BeatmapInfo.Ruleset.OnlineID == 0)
                     {
                         foreach (var ruleset in processableRulesets)
-                            callback(new ProcessableItem(beatmap, ruleset), conn);
+                            callback(new ProcessableItem(beatmap, ruleset, ranked), conn);
                     }
                     else if (processableRulesets.Any(r => r.RulesetInfo.OnlineID == beatmap.BeatmapInfo.Ruleset.OnlineID))
-                        callback(new ProcessableItem(beatmap, beatmap.BeatmapInfo.Ruleset.CreateInstance()), conn);
+                        callback(new ProcessableItem(beatmap, beatmap.BeatmapInfo.Ruleset.CreateInstance(), ranked), conn);
                 }
             }
             catch (Exception e)
@@ -181,6 +183,9 @@ namespace osu.Server.DifficultyCalculator
 
         private void processLegacyAttributes(ProcessableItem item, MySqlConnection conn)
         {
+            if (!item.Ranked)
+                return;
+
             Mod? classicMod = item.Ruleset.CreateMod<ModClassic>();
             Mod[] mods = classicMod != null ? new[] { classicMod } : Array.Empty<Mod>();
 
@@ -229,6 +234,6 @@ namespace osu.Server.DifficultyCalculator
             return rulesetsToProcess;
         }
 
-        private readonly record struct ProcessableItem(WorkingBeatmap Beatmap, Ruleset Ruleset);
+        private readonly record struct ProcessableItem(WorkingBeatmap Beatmap, Ruleset Ruleset, bool Ranked);
     }
 }
