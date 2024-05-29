@@ -122,7 +122,7 @@ namespace osu.Server.DifficultyCalculator
                         Diff = attribute.StarRating
                     });
 
-                if (!AppSettings.SKIP_INSERT_ATTRIBUTES)
+                if (item.Ranked && !AppSettings.SKIP_INSERT_ATTRIBUTES)
                 {
                     var parameters = new List<object>();
 
