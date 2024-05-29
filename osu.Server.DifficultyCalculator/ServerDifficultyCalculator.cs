@@ -116,8 +116,8 @@ namespace osu.Server.DifficultyCalculator
                     + "ON DUPLICATE KEY UPDATE `diff_unified` = @Diff",
                     new
                     {
-                        BeatmapId = item.Beatmap.BeatmapInfo.OnlineID,
-                        Mode = item.Ruleset.RulesetInfo.OnlineID,
+                        BeatmapId = item.BeatmapID,
+                        Mode = item.RulesetID,
                         Mods = (int)legacyMods,
                         Diff = attribute.StarRating
                     });
@@ -130,8 +130,8 @@ namespace osu.Server.DifficultyCalculator
                     {
                         parameters.Add(new
                         {
-                            BeatmapId = item.Beatmap.BeatmapInfo.OnlineID,
-                            Mode = item.Ruleset.RulesetInfo.OnlineID,
+                            BeatmapId = item.BeatmapID,
+                            Mode = item.RulesetID,
                             Mods = (int)legacyMods,
                             Attribute = mapping.attributeId,
                             Value = Convert.ToSingle(mapping.value)
@@ -152,7 +152,7 @@ namespace osu.Server.DifficultyCalculator
 
                     object param = new
                     {
-                        BeatmapId = item.Beatmap.BeatmapInfo.OnlineID,
+                        BeatmapId = item.BeatmapID,
                         Diff = attribute.StarRating,
                         AR = item.Beatmap.Beatmap.BeatmapInfo.Difficulty.ApproachRate,
                         OD = item.Beatmap.Beatmap.BeatmapInfo.Difficulty.OverallDifficulty,
@@ -201,8 +201,8 @@ namespace osu.Server.DifficultyCalculator
                 + "ON DUPLICATE KEY UPDATE `legacy_accuracy_score` = @AccuracyScore, `legacy_combo_score` = @ComboScore, `legacy_bonus_score_ratio` = @BonusScoreRatio, `legacy_bonus_score` = @BonusScore, `max_combo` = @MaxCombo",
                 new
                 {
-                    BeatmapId = item.Beatmap.BeatmapInfo.OnlineID,
-                    Mode = item.Ruleset.RulesetInfo.OnlineID,
+                    BeatmapId = item.BeatmapID,
+                    Mode = item.RulesetID,
                     AccuracyScore = attributes.AccuracyScore,
                     ComboScore = attributes.ComboScore,
                     BonusScoreRatio = attributes.BonusScoreRatio,
@@ -234,6 +234,10 @@ namespace osu.Server.DifficultyCalculator
             return rulesetsToProcess;
         }
 
-        private readonly record struct ProcessableItem(WorkingBeatmap Beatmap, Ruleset Ruleset, bool Ranked);
+        private readonly record struct ProcessableItem(WorkingBeatmap Beatmap, Ruleset Ruleset, bool Ranked)
+        {
+            public int BeatmapID => Beatmap.BeatmapInfo.OnlineID;
+            public int RulesetID => Ruleset.RulesetInfo.OnlineID;
+        }
     }
 }
