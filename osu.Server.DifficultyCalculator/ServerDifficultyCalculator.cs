@@ -154,10 +154,10 @@ namespace osu.Server.DifficultyCalculator
                     {
                         BeatmapId = item.BeatmapID,
                         Diff = attribute.StarRating,
-                        AR = item.Beatmap.Beatmap.BeatmapInfo.Difficulty.ApproachRate,
-                        OD = item.Beatmap.Beatmap.BeatmapInfo.Difficulty.OverallDifficulty,
-                        HP = item.Beatmap.Beatmap.BeatmapInfo.Difficulty.DrainRate,
-                        CS = item.Beatmap.Beatmap.BeatmapInfo.Difficulty.CircleSize,
+                        AR = item.Beatmap.BeatmapInfo.Difficulty.ApproachRate,
+                        OD = item.Beatmap.BeatmapInfo.Difficulty.OverallDifficulty,
+                        HP = item.Beatmap.BeatmapInfo.Difficulty.DrainRate,
+                        CS = item.Beatmap.BeatmapInfo.Difficulty.CircleSize,
                         BPM = Math.Round(bpm, 2),
                         MaxCombo = attribute.MaxCombo,
                     };
