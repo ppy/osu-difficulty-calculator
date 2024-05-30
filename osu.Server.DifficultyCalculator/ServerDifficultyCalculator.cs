@@ -67,7 +67,7 @@ namespace osu.Server.DifficultyCalculator
 
         public void ProcessLegacyAttributes(WorkingBeatmap beatmap) => run(beatmap, processLegacyAttributes);
 
-        private void run(WorkingBeatmap beatmap, Action<ProcessableItem, MySqlConnection> callback)
+        private void run(WorkingBeatmap beatmap, Action<ProcessableBeatmap, MySqlConnection> callback)
         {
             try
             {
@@ -89,10 +89,10 @@ namespace osu.Server.DifficultyCalculator
                     if (processConverts && beatmap.BeatmapInfo.Ruleset.OnlineID == 0)
                     {
                         foreach (var ruleset in processableRulesets)
-                            callback(new ProcessableItem(beatmap, ruleset, ranked), conn);
+                            callback(new ProcessableBeatmap(beatmap, ruleset, ranked), conn);
                     }
                     else if (processableRulesets.Any(r => r.RulesetInfo.OnlineID == beatmap.BeatmapInfo.Ruleset.OnlineID))
-                        callback(new ProcessableItem(beatmap, beatmap.BeatmapInfo.Ruleset.CreateInstance(), ranked), conn);
+                        callback(new ProcessableBeatmap(beatmap, beatmap.BeatmapInfo.Ruleset.CreateInstance(), ranked), conn);
                 }
             }
             catch (Exception e)
@@ -101,14 +101,14 @@ namespace osu.Server.DifficultyCalculator
             }
         }
 
-        private void processDifficulty(ProcessableItem item, MySqlConnection conn)
+        private void processDifficulty(ProcessableBeatmap beatmap, MySqlConnection conn)
         {
-            foreach (var attribute in item.Ruleset.CreateDifficultyCalculator(item.Beatmap).CalculateAllLegacyCombinations())
+            foreach (var attribute in beatmap.Ruleset.CreateDifficultyCalculator(beatmap.Beatmap).CalculateAllLegacyCombinations())
             {
                 if (dryRun)
                     continue;
 
-                LegacyMods legacyMods = item.Ruleset.ConvertToLegacyMods(attribute.Mods);
+                LegacyMods legacyMods = beatmap.Ruleset.ConvertToLegacyMods(attribute.Mods);
 
                 conn.Execute(
                     "INSERT INTO `osu_beatmap_difficulty` (`beatmap_id`, `mode`, `mods`, `diff_unified`) "
@@ -116,13 +116,13 @@ namespace osu.Server.DifficultyCalculator
                     + "ON DUPLICATE KEY UPDATE `diff_unified` = @Diff",
                     new
                     {
-                        BeatmapId = item.BeatmapID,
-                        Mode = item.RulesetID,
+                        BeatmapId = beatmap.BeatmapID,
+                        Mode = beatmap.RulesetID,
                         Mods = (int)legacyMods,
                         Diff = attribute.StarRating
                     });
 
-                if (item.Ranked && !AppSettings.SKIP_INSERT_ATTRIBUTES)
+                if (beatmap.Ranked && !AppSettings.SKIP_INSERT_ATTRIBUTES)
                 {
                     var parameters = new List<object>();
 
@@ -130,8 +130,8 @@ namespace osu.Server.DifficultyCalculator
                     {
                         parameters.Add(new
                         {
-                            BeatmapId = item.BeatmapID,
-                            Mode = item.RulesetID,
+                            BeatmapId = beatmap.BeatmapID,
+                            Mode = beatmap.RulesetID,
                             Mods = (int)legacyMods,
                             Attribute = mapping.attributeId,
                             Value = Convert.ToSingle(mapping.value)
@@ -145,19 +145,19 @@ namespace osu.Server.DifficultyCalculator
                         parameters.ToArray());
                 }
 
-                if (legacyMods == LegacyMods.None && item.Ruleset.RulesetInfo.Equals(item.Beatmap.BeatmapInfo.Ruleset))
+                if (legacyMods == LegacyMods.None && beatmap.Ruleset.RulesetInfo.Equals(beatmap.Beatmap.BeatmapInfo.Ruleset))
                 {
-                    double beatLength = item.Beatmap.Beatmap.GetMostCommonBeatLength();
+                    double beatLength = beatmap.Beatmap.Beatmap.GetMostCommonBeatLength();
                     double bpm = beatLength > 0 ? 60000 / beatLength : 0;
 
                     object param = new
                     {
-                        BeatmapId = item.BeatmapID,
+                        BeatmapId = beatmap.BeatmapID,
                         Diff = attribute.StarRating,
-                        AR = item.Beatmap.BeatmapInfo.Difficulty.ApproachRate,
-                        OD = item.Beatmap.BeatmapInfo.Difficulty.OverallDifficulty,
-                        HP = item.Beatmap.BeatmapInfo.Difficulty.DrainRate,
-                        CS = item.Beatmap.BeatmapInfo.Difficulty.CircleSize,
+                        AR = beatmap.Beatmap.BeatmapInfo.Difficulty.ApproachRate,
+                        OD = beatmap.Beatmap.BeatmapInfo.Difficulty.OverallDifficulty,
+                        HP = beatmap.Beatmap.BeatmapInfo.Difficulty.DrainRate,
+                        CS = beatmap.Beatmap.BeatmapInfo.Difficulty.CircleSize,
                         BPM = Math.Round(bpm, 2),
                         MaxCombo = attribute.MaxCombo,
                     };
@@ -181,13 +181,13 @@ namespace osu.Server.DifficultyCalculator
             }
         }
 
-        private void processLegacyAttributes(ProcessableItem item, MySqlConnection conn)
+        private void processLegacyAttributes(ProcessableBeatmap beatmap, MySqlConnection conn)
         {
-            Mod? classicMod = item.Ruleset.CreateMod<ModClassic>();
+            Mod? classicMod = beatmap.Ruleset.CreateMod<ModClassic>();
             Mod[] mods = classicMod != null ? new[] { classicMod } : Array.Empty<Mod>();
 
-            ILegacyScoreSimulator simulator = ((ILegacyRuleset)item.Ruleset).CreateLegacyScoreSimulator();
-            LegacyScoreAttributes attributes = simulator.Simulate(item.Beatmap, item.Beatmap.GetPlayableBeatmap(item.Ruleset.RulesetInfo, mods));
+            ILegacyScoreSimulator simulator = ((ILegacyRuleset)beatmap.Ruleset).CreateLegacyScoreSimulator();
+            LegacyScoreAttributes attributes = simulator.Simulate(beatmap.Beatmap, beatmap.Beatmap.GetPlayableBeatmap(beatmap.Ruleset.RulesetInfo, mods));
 
             if (dryRun)
                 return;
@@ -198,8 +198,8 @@ namespace osu.Server.DifficultyCalculator
                 + "ON DUPLICATE KEY UPDATE `legacy_accuracy_score` = @AccuracyScore, `legacy_combo_score` = @ComboScore, `legacy_bonus_score_ratio` = @BonusScoreRatio, `legacy_bonus_score` = @BonusScore, `max_combo` = @MaxCombo",
                 new
                 {
-                    BeatmapId = item.BeatmapID,
-                    Mode = item.RulesetID,
+                    BeatmapId = beatmap.BeatmapID,
+                    Mode = beatmap.RulesetID,
                     AccuracyScore = attributes.AccuracyScore,
                     ComboScore = attributes.ComboScore,
                     BonusScoreRatio = attributes.BonusScoreRatio,
@@ -231,7 +231,7 @@ namespace osu.Server.DifficultyCalculator
             return rulesetsToProcess;
         }
 
-        private readonly record struct ProcessableItem(WorkingBeatmap Beatmap, Ruleset Ruleset, bool Ranked)
+        private readonly record struct ProcessableBeatmap(WorkingBeatmap Beatmap, Ruleset Ruleset, bool Ranked)
         {
             public int BeatmapID => Beatmap.BeatmapInfo.OnlineID;
             public int RulesetID => Ruleset.RulesetInfo.OnlineID;
