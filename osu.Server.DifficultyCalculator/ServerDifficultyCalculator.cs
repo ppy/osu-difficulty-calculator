@@ -103,7 +103,7 @@ namespace osu.Server.DifficultyCalculator
 
         private void processDifficulty(ProcessableItem item, MySqlConnection conn)
         {
-            foreach (var attribute in item.Ruleset.CreateDifficultyCalculator(item.Beatmap).CalculateAllLegacyCombinations())
+            foreach (var attribute in item.Ruleset.CreateDifficultyCalculator(item.WorkingBeatmap).CalculateAllLegacyCombinations())
             {
                 if (dryRun)
                     continue;
@@ -145,19 +145,19 @@ namespace osu.Server.DifficultyCalculator
                         parameters.ToArray());
                 }
 
-                if (legacyMods == LegacyMods.None && item.Ruleset.RulesetInfo.Equals(item.Beatmap.BeatmapInfo.Ruleset))
+                if (legacyMods == LegacyMods.None && item.Ruleset.RulesetInfo.Equals(item.WorkingBeatmap.BeatmapInfo.Ruleset))
                 {
-                    double beatLength = item.Beatmap.Beatmap.GetMostCommonBeatLength();
+                    double beatLength = item.WorkingBeatmap.Beatmap.GetMostCommonBeatLength();
                     double bpm = beatLength > 0 ? 60000 / beatLength : 0;
 
                     object param = new
                     {
                         BeatmapId = item.BeatmapID,
                         Diff = attribute.StarRating,
-                        AR = item.Beatmap.BeatmapInfo.Difficulty.ApproachRate,
-                        OD = item.Beatmap.BeatmapInfo.Difficulty.OverallDifficulty,
-                        HP = item.Beatmap.BeatmapInfo.Difficulty.DrainRate,
-                        CS = item.Beatmap.BeatmapInfo.Difficulty.CircleSize,
+                        AR = item.WorkingBeatmap.BeatmapInfo.Difficulty.ApproachRate,
+                        OD = item.WorkingBeatmap.BeatmapInfo.Difficulty.OverallDifficulty,
+                        HP = item.WorkingBeatmap.BeatmapInfo.Difficulty.DrainRate,
+                        CS = item.WorkingBeatmap.BeatmapInfo.Difficulty.CircleSize,
                         BPM = Math.Round(bpm, 2),
                         MaxCombo = attribute.MaxCombo,
                     };
@@ -187,7 +187,7 @@ namespace osu.Server.DifficultyCalculator
             Mod[] mods = classicMod != null ? new[] { classicMod } : Array.Empty<Mod>();
 
             ILegacyScoreSimulator simulator = ((ILegacyRuleset)item.Ruleset).CreateLegacyScoreSimulator();
-            LegacyScoreAttributes attributes = simulator.Simulate(item.Beatmap, item.Beatmap.GetPlayableBeatmap(item.Ruleset.RulesetInfo, mods));
+            LegacyScoreAttributes attributes = simulator.Simulate(item.WorkingBeatmap, item.WorkingBeatmap.GetPlayableBeatmap(item.Ruleset.RulesetInfo, mods));
 
             if (dryRun)
                 return;
@@ -231,9 +231,9 @@ namespace osu.Server.DifficultyCalculator
             return rulesetsToProcess;
         }
 
-        private readonly record struct ProcessableItem(WorkingBeatmap Beatmap, Ruleset Ruleset, bool Ranked)
+        private readonly record struct ProcessableItem(WorkingBeatmap WorkingBeatmap, Ruleset Ruleset, bool Ranked)
         {
-            public int BeatmapID => Beatmap.BeatmapInfo.OnlineID;
+            public int BeatmapID => WorkingBeatmap.BeatmapInfo.OnlineID;
             public int RulesetID => Ruleset.RulesetInfo.OnlineID;
         }
     }
