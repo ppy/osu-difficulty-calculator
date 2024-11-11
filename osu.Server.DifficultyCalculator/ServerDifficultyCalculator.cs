@@ -12,6 +12,7 @@ using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Legacy;
 using osu.Game.Rulesets;
 using osu.Game.Rulesets.Mods;
+using osu.Game.Rulesets.Objects.Legacy;
 using osu.Game.Rulesets.Scoring.Legacy;
 using osu.Server.DifficultyCalculator.Commands;
 
@@ -150,6 +151,20 @@ namespace osu.Server.DifficultyCalculator
                     double beatLength = item.WorkingBeatmap.Beatmap.GetMostCommonBeatLength();
                     double bpm = beatLength > 0 ? 60000 / beatLength : 0;
 
+                    int countCircle = 0;
+                    int countSlider = 0;
+                    int countSpinner = 0;
+
+                    foreach (var obj in item.WorkingBeatmap.Beatmap.HitObjects.OfType<IHasLegacyHitObjectType>())
+                    {
+                        if ((obj.LegacyType & LegacyHitObjectType.Circle) > 0)
+                            countCircle++;
+                        if ((obj.LegacyType & LegacyHitObjectType.Slider) > 0)
+                            countSlider++;
+                        if ((obj.LegacyType & LegacyHitObjectType.Spinner) > 0)
+                            countSpinner++;
+                    }
+
                     object param = new
                     {
                         BeatmapId = item.BeatmapID,
@@ -160,20 +175,24 @@ namespace osu.Server.DifficultyCalculator
                         CS = item.WorkingBeatmap.BeatmapInfo.Difficulty.CircleSize,
                         BPM = Math.Round(bpm, 2),
                         MaxCombo = attribute.MaxCombo,
+                        CountCircle = countCircle,
+                        CountSlider = countSlider,
+                        CountSpinner = countSpinner,
+                        CountTotal = countCircle + countSlider + countSpinner
                     };
 
                     if (AppSettings.INSERT_BEATMAPS)
                     {
                         conn.Execute(
-                            "INSERT INTO `osu_beatmaps` (`beatmap_id`, `difficultyrating`, `diff_approach`, `diff_overall`, `diff_drain`, `diff_size`, `bpm`, `max_combo`) "
-                            + "VALUES (@BeatmapId, @Diff, @AR, @OD, @HP, @CS, @BPM, @MaxCombo) "
-                            + "ON DUPLICATE KEY UPDATE `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM, `max_combo` = @MaxCombo",
+                            "INSERT INTO `osu_beatmaps` (`beatmap_id`, `difficultyrating`, `diff_approach`, `diff_overall`, `diff_drain`, `diff_size`, `bpm`, `max_combo`, `countNormal`, `countSlider`, `countSpinner`, `countTotal`) "
+                            + "VALUES (@BeatmapId, @Diff, @AR, @OD, @HP, @CS, @BPM, @MaxCombo, @CountCircle, @CountSlider, @CountSpinner, @CountTotal) "
+                            + "ON DUPLICATE KEY UPDATE `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM, `max_combo` = @MaxCombo, `countNormal` = @CountCircle, `countSlider` = @CountSlider, `countSpinner` = @CountSpinner, `countTotal` = @CountTotal",
                             param);
                     }
                     else
                     {
                         conn.Execute(
-                            "UPDATE `osu_beatmaps` SET `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM , `max_combo` = @MaxCombo "
+                            "UPDATE `osu_beatmaps` SET `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM , `max_combo` = @MaxCombo, `countNormal` = @CountCircle, `countSlider` = @CountSlider, `countSpinner` = @CountSpinner, `countTotal` = @CountTotal "
                             + "WHERE `beatmap_id` = @BeatmapId",
                             param);
                     }
