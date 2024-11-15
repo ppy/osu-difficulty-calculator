@@ -12,6 +12,7 @@ using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Legacy;
 using osu.Game.Rulesets;
 using osu.Game.Rulesets.Mods;
+using osu.Game.Rulesets.Objects.Legacy;
 using osu.Game.Rulesets.Scoring.Legacy;
 using osu.Server.DifficultyCalculator.Commands;
 
@@ -67,7 +68,7 @@ namespace osu.Server.DifficultyCalculator
 
         public void ProcessLegacyAttributes(WorkingBeatmap beatmap) => run(beatmap, processLegacyAttributes);
 
-        private void run(WorkingBeatmap beatmap, Action<ProcessableBeatmap, MySqlConnection> callback)
+        private void run(WorkingBeatmap beatmap, Action<ProcessableItem, MySqlConnection> callback)
         {
             try
             {
@@ -89,10 +90,10 @@ namespace osu.Server.DifficultyCalculator
                     if (processConverts && beatmap.BeatmapInfo.Ruleset.OnlineID == 0)
                     {
                         foreach (var ruleset in processableRulesets)
-                            callback(new ProcessableBeatmap(beatmap, ruleset, ranked), conn);
+                            callback(new ProcessableItem(beatmap, ruleset, ranked), conn);
                     }
                     else if (processableRulesets.Any(r => r.RulesetInfo.OnlineID == beatmap.BeatmapInfo.Ruleset.OnlineID))
-                        callback(new ProcessableBeatmap(beatmap, beatmap.BeatmapInfo.Ruleset.CreateInstance(), ranked), conn);
+                        callback(new ProcessableItem(beatmap, beatmap.BeatmapInfo.Ruleset.CreateInstance(), ranked), conn);
                 }
             }
             catch (Exception e)
@@ -101,14 +102,14 @@ namespace osu.Server.DifficultyCalculator
             }
         }
 
-        private void processDifficulty(ProcessableBeatmap beatmap, MySqlConnection conn)
+        private void processDifficulty(ProcessableItem item, MySqlConnection conn)
         {
-            foreach (var attribute in beatmap.Ruleset.CreateDifficultyCalculator(beatmap.Beatmap).CalculateAllLegacyCombinations())
+            foreach (var attribute in item.Ruleset.CreateDifficultyCalculator(item.WorkingBeatmap).CalculateAllLegacyCombinations())
             {
                 if (dryRun)
                     continue;
 
-                LegacyMods legacyMods = beatmap.Ruleset.ConvertToLegacyMods(attribute.Mods);
+                LegacyMods legacyMods = item.Ruleset.ConvertToLegacyMods(attribute.Mods);
 
                 conn.Execute(
                     "INSERT INTO `osu_beatmap_difficulty` (`beatmap_id`, `mode`, `mods`, `diff_unified`) "
@@ -116,13 +117,13 @@ namespace osu.Server.DifficultyCalculator
                     + "ON DUPLICATE KEY UPDATE `diff_unified` = @Diff",
                     new
                     {
-                        BeatmapId = beatmap.BeatmapID,
-                        Mode = beatmap.RulesetID,
+                        BeatmapId = item.BeatmapID,
+                        Mode = item.RulesetID,
                         Mods = (int)legacyMods,
                         Diff = attribute.StarRating
                     });
 
-                if (beatmap.Ranked && !AppSettings.SKIP_INSERT_ATTRIBUTES)
+                if (item.Ranked && !AppSettings.SKIP_INSERT_ATTRIBUTES)
                 {
                     var parameters = new List<object>();
 
@@ -130,8 +131,8 @@ namespace osu.Server.DifficultyCalculator
                     {
                         parameters.Add(new
                         {
-                            BeatmapId = beatmap.BeatmapID,
-                            Mode = beatmap.RulesetID,
+                            BeatmapId = item.BeatmapID,
+                            Mode = item.RulesetID,
                             Mods = (int)legacyMods,
                             Attribute = mapping.attributeId,
                             Value = Convert.ToSingle(mapping.value)
@@ -145,35 +146,53 @@ namespace osu.Server.DifficultyCalculator
                         parameters.ToArray());
                 }
 
-                if (legacyMods == LegacyMods.None && beatmap.Ruleset.RulesetInfo.Equals(beatmap.Beatmap.BeatmapInfo.Ruleset))
+                if (legacyMods == LegacyMods.None && item.Ruleset.RulesetInfo.Equals(item.WorkingBeatmap.BeatmapInfo.Ruleset))
                 {
-                    double beatLength = beatmap.Beatmap.Beatmap.GetMostCommonBeatLength();
+                    double beatLength = item.WorkingBeatmap.Beatmap.GetMostCommonBeatLength();
                     double bpm = beatLength > 0 ? 60000 / beatLength : 0;
+
+                    int countCircle = 0;
+                    int countSlider = 0;
+                    int countSpinner = 0;
+
+                    foreach (var obj in item.WorkingBeatmap.Beatmap.HitObjects.OfType<IHasLegacyHitObjectType>())
+                    {
+                        if ((obj.LegacyType & LegacyHitObjectType.Circle) > 0)
+                            countCircle++;
+                        if ((obj.LegacyType & LegacyHitObjectType.Slider) > 0)
+                            countSlider++;
+                        if ((obj.LegacyType & LegacyHitObjectType.Spinner) > 0)
+                            countSpinner++;
+                    }
 
                     object param = new
                     {
-                        BeatmapId = beatmap.BeatmapID,
+                        BeatmapId = item.BeatmapID,
                         Diff = attribute.StarRating,
-                        AR = beatmap.Beatmap.BeatmapInfo.Difficulty.ApproachRate,
-                        OD = beatmap.Beatmap.BeatmapInfo.Difficulty.OverallDifficulty,
-                        HP = beatmap.Beatmap.BeatmapInfo.Difficulty.DrainRate,
-                        CS = beatmap.Beatmap.BeatmapInfo.Difficulty.CircleSize,
+                        AR = item.WorkingBeatmap.BeatmapInfo.Difficulty.ApproachRate,
+                        OD = item.WorkingBeatmap.BeatmapInfo.Difficulty.OverallDifficulty,
+                        HP = item.WorkingBeatmap.BeatmapInfo.Difficulty.DrainRate,
+                        CS = item.WorkingBeatmap.BeatmapInfo.Difficulty.CircleSize,
                         BPM = Math.Round(bpm, 2),
                         MaxCombo = attribute.MaxCombo,
+                        CountCircle = countCircle,
+                        CountSlider = countSlider,
+                        CountSpinner = countSpinner,
+                        CountTotal = countCircle + countSlider + countSpinner
                     };
 
                     if (AppSettings.INSERT_BEATMAPS)
                     {
                         conn.Execute(
-                            "INSERT INTO `osu_beatmaps` (`beatmap_id`, `difficultyrating`, `diff_approach`, `diff_overall`, `diff_drain`, `diff_size`, `bpm`, `max_combo`) "
-                            + "VALUES (@BeatmapId, @Diff, @AR, @OD, @HP, @CS, @BPM, @MaxCombo) "
-                            + "ON DUPLICATE KEY UPDATE `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM, `max_combo` = @MaxCombo",
+                            "INSERT INTO `osu_beatmaps` (`beatmap_id`, `difficultyrating`, `diff_approach`, `diff_overall`, `diff_drain`, `diff_size`, `bpm`, `max_combo`, `countNormal`, `countSlider`, `countSpinner`, `countTotal`) "
+                            + "VALUES (@BeatmapId, @Diff, @AR, @OD, @HP, @CS, @BPM, @MaxCombo, @CountCircle, @CountSlider, @CountSpinner, @CountTotal) "
+                            + "ON DUPLICATE KEY UPDATE `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM, `max_combo` = @MaxCombo, `countNormal` = @CountCircle, `countSlider` = @CountSlider, `countSpinner` = @CountSpinner, `countTotal` = @CountTotal",
                             param);
                     }
                     else
                     {
                         conn.Execute(
-                            "UPDATE `osu_beatmaps` SET `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM , `max_combo` = @MaxCombo "
+                            "UPDATE `osu_beatmaps` SET `difficultyrating` = @Diff, `diff_approach` = @AR, `diff_overall` = @OD, `diff_drain` = @HP, `diff_size` = @CS, `bpm` = @BPM , `max_combo` = @MaxCombo, `countNormal` = @CountCircle, `countSlider` = @CountSlider, `countSpinner` = @CountSpinner, `countTotal` = @CountTotal "
                             + "WHERE `beatmap_id` = @BeatmapId",
                             param);
                     }
@@ -181,13 +200,13 @@ namespace osu.Server.DifficultyCalculator
             }
         }
 
-        private void processLegacyAttributes(ProcessableBeatmap beatmap, MySqlConnection conn)
+        private void processLegacyAttributes(ProcessableItem item, MySqlConnection conn)
         {
-            Mod? classicMod = beatmap.Ruleset.CreateMod<ModClassic>();
+            Mod? classicMod = item.Ruleset.CreateMod<ModClassic>();
             Mod[] mods = classicMod != null ? new[] { classicMod } : Array.Empty<Mod>();
 
-            ILegacyScoreSimulator simulator = ((ILegacyRuleset)beatmap.Ruleset).CreateLegacyScoreSimulator();
-            LegacyScoreAttributes attributes = simulator.Simulate(beatmap.Beatmap, beatmap.Beatmap.GetPlayableBeatmap(beatmap.Ruleset.RulesetInfo, mods));
+            ILegacyScoreSimulator simulator = ((ILegacyRuleset)item.Ruleset).CreateLegacyScoreSimulator();
+            LegacyScoreAttributes attributes = simulator.Simulate(item.WorkingBeatmap, item.WorkingBeatmap.GetPlayableBeatmap(item.Ruleset.RulesetInfo, mods));
 
             if (dryRun)
                 return;
@@ -198,8 +217,8 @@ namespace osu.Server.DifficultyCalculator
                 + "ON DUPLICATE KEY UPDATE `legacy_accuracy_score` = @AccuracyScore, `legacy_combo_score` = @ComboScore, `legacy_bonus_score_ratio` = @BonusScoreRatio, `legacy_bonus_score` = @BonusScore, `max_combo` = @MaxCombo",
                 new
                 {
-                    BeatmapId = beatmap.BeatmapID,
-                    Mode = beatmap.RulesetID,
+                    BeatmapId = item.BeatmapID,
+                    Mode = item.RulesetID,
                     AccuracyScore = attributes.AccuracyScore,
                     ComboScore = attributes.ComboScore,
                     BonusScoreRatio = attributes.BonusScoreRatio,
@@ -231,9 +250,9 @@ namespace osu.Server.DifficultyCalculator
             return rulesetsToProcess;
         }
 
-        private readonly record struct ProcessableBeatmap(WorkingBeatmap Beatmap, Ruleset Ruleset, bool Ranked)
+        private readonly record struct ProcessableItem(WorkingBeatmap WorkingBeatmap, Ruleset Ruleset, bool Ranked)
         {
-            public int BeatmapID => Beatmap.BeatmapInfo.OnlineID;
+            public int BeatmapID => WorkingBeatmap.BeatmapInfo.OnlineID;
             public int RulesetID => Ruleset.RulesetInfo.OnlineID;
         }
     }
