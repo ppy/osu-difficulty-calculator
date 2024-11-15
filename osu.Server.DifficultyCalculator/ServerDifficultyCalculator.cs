@@ -159,7 +159,7 @@ namespace osu.Server.DifficultyCalculator
                     {
                         if ((obj.LegacyType & LegacyHitObjectType.Circle) > 0)
                             countCircle++;
-                        if ((obj.LegacyType & LegacyHitObjectType.Slider) > 0)
+                        if ((obj.LegacyType & LegacyHitObjectType.Slider) > 0 || (obj.LegacyType & LegacyHitObjectType.Hold) > 0)
                             countSlider++;
                         if ((obj.LegacyType & LegacyHitObjectType.Spinner) > 0)
                             countSpinner++;
