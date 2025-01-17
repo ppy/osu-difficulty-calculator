@@ -104,12 +104,12 @@ namespace osu.Server.DifficultyCalculator
 
         private void processDifficulty(ProcessableItem item, MySqlConnection conn)
         {
-            foreach (var attribute in item.Ruleset.CreateDifficultyCalculator(item.WorkingBeatmap).CalculateAllLegacyCombinations())
+            foreach (var (mods, attributes) in item.Ruleset.CreateDifficultyCalculator(item.WorkingBeatmap).CalculateAllLegacyCombinations())
             {
                 if (dryRun)
                     continue;
 
-                LegacyMods legacyMods = item.Ruleset.ConvertToLegacyMods(attribute.Mods);
+                LegacyMods legacyMods = item.Ruleset.ConvertToLegacyMods(mods);
 
                 conn.Execute(
                     "INSERT INTO `osu_beatmap_difficulty` (`beatmap_id`, `mode`, `mods`, `diff_unified`) "
@@ -120,14 +120,14 @@ namespace osu.Server.DifficultyCalculator
                         BeatmapId = item.BeatmapID,
                         Mode = item.RulesetID,
                         Mods = (int)legacyMods,
-                        Diff = attribute.StarRating
+                        Diff = attributes.StarRating
                     });
 
                 if (item.Ranked && !AppSettings.SKIP_INSERT_ATTRIBUTES)
                 {
                     var parameters = new List<object>();
 
-                    foreach (var mapping in attribute.ToDatabaseAttributes())
+                    foreach (var mapping in attributes.ToDatabaseAttributes())
                     {
                         parameters.Add(new
                         {
@@ -168,13 +168,13 @@ namespace osu.Server.DifficultyCalculator
                     object param = new
                     {
                         BeatmapId = item.BeatmapID,
-                        Diff = attribute.StarRating,
+                        Diff = attributes.StarRating,
                         AR = item.WorkingBeatmap.BeatmapInfo.Difficulty.ApproachRate,
                         OD = item.WorkingBeatmap.BeatmapInfo.Difficulty.OverallDifficulty,
                         HP = item.WorkingBeatmap.BeatmapInfo.Difficulty.DrainRate,
                         CS = item.WorkingBeatmap.BeatmapInfo.Difficulty.CircleSize,
                         BPM = Math.Round(bpm, 2),
-                        MaxCombo = attribute.MaxCombo,
+                        MaxCombo = attributes.MaxCombo,
                         CountCircle = countCircle,
                         CountSlider = countSlider,
                         CountSpinner = countSpinner,
