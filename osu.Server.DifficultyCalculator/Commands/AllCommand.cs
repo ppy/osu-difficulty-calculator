@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using Dapper;
 using McMaster.Extensions.CommandLineUtils;
+using osu.Server.QueueProcessor;
 
 namespace osu.Server.DifficultyCalculator.Commands
 {
@@ -15,7 +16,7 @@ namespace osu.Server.DifficultyCalculator.Commands
 
         protected override IEnumerable<int> GetBeatmaps()
         {
-            using (var conn = Database.GetSlaveConnection())
+            using (var conn = DatabaseAccess.GetConnection())
             {
                 var condition = CombineSqlConditions(
                     RankedOnly ? "`approved` >= 1" : null,

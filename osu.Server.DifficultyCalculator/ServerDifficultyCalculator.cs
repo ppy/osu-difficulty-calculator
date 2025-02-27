@@ -15,6 +15,7 @@ using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Objects.Legacy;
 using osu.Game.Rulesets.Scoring.Legacy;
 using osu.Server.DifficultyCalculator.Commands;
+using osu.Server.QueueProcessor;
 
 namespace osu.Server.DifficultyCalculator
 {
@@ -74,7 +75,7 @@ namespace osu.Server.DifficultyCalculator
             {
                 bool ranked;
 
-                using (var conn = Database.GetSlaveConnection())
+                using (var conn = DatabaseAccess.GetConnection())
                 {
                     ranked = conn.QuerySingleOrDefault<int>("SELECT `approved` FROM `osu_beatmaps` WHERE `beatmap_id` = @BeatmapId", new
                     {
@@ -85,7 +86,7 @@ namespace osu.Server.DifficultyCalculator
                         throw new ArgumentException($"Ranked beatmap {beatmap.BeatmapInfo.OnlineInfo} has 0 hitobjects!");
                 }
 
-                using (var conn = Database.GetConnection())
+                using (var conn = DatabaseAccess.GetConnection())
                 {
                     if (processConverts && beatmap.BeatmapInfo.Ruleset.OnlineID == 0)
                     {
