@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using Dapper;
 using MySqlConnector;
 using osu.Game.Beatmaps;
@@ -105,7 +106,9 @@ namespace osu.Server.DifficultyCalculator
 
         private void processDifficulty(ProcessableItem item, MySqlConnection conn)
         {
-            foreach (var attribute in item.Ruleset.CreateDifficultyCalculator(item.WorkingBeatmap).CalculateAllLegacyCombinations())
+            using var timedCancellationSource = new CancellationTokenSource(TimeSpan.FromSeconds(AppSettings.ATTRIBUTE_PROCESSING_TIMEOUT));
+
+            foreach (var attribute in item.Ruleset.CreateDifficultyCalculator(item.WorkingBeatmap).CalculateAllLegacyCombinations(timedCancellationSource.Token))
             {
                 if (dryRun)
                     continue;

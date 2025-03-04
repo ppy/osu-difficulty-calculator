@@ -38,6 +38,12 @@ namespace osu.Server.DifficultyCalculator
         /// </summary>
         public static readonly bool SAVE_DOWNLOADED;
 
+        /// <summary>
+        /// The amount of time (in milliseconds) to allow for processing difficulty attributes before timing out.
+        /// This is per-ruleset and shared amongst all mod combinations within the ruleset.
+        /// </summary>
+        public static readonly int ATTRIBUTE_PROCESSING_TIMEOUT = 30000;
+
         static AppSettings()
         {
             INSERT_BEATMAPS = Environment.GetEnvironmentVariable("INSERT_BEATMAPS") == "1";
@@ -47,6 +53,8 @@ namespace osu.Server.DifficultyCalculator
 
             BEATMAPS_PATH = Environment.GetEnvironmentVariable("BEATMAPS_PATH") ?? "osu";
             DOWNLOAD_PATH = Environment.GetEnvironmentVariable("BEATMAP_DOWNLOAD_PATH") ?? "https://osu.ppy.sh/osu/{0}";
+
+            ATTRIBUTE_PROCESSING_TIMEOUT = int.TryParse(Environment.GetEnvironmentVariable("ATTRIBUTE_PROCESSING_TIMEOUT"), out int timeout) ? timeout : ATTRIBUTE_PROCESSING_TIMEOUT;
         }
     }
 }
