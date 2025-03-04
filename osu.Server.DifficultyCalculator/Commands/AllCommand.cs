@@ -14,13 +14,21 @@ namespace osu.Server.DifficultyCalculator.Commands
         [Option(CommandOptionType.NoValue, Template = "-r|--ranked", Description = "Only calculate difficulty for ranked/approved/qualified/loved maps.")]
         public bool RankedOnly { get; set; }
 
+        [Option("--sql", Description = "Specify a custom query to limit the scope of beatmaps")]
+        public string? CustomQuery { get; set; }
+
+        [Option("--from", Description = "The minimum beatmap id to calculate the difficulty for.")]
+        public int StartId { get; set; }
+
         protected override IEnumerable<int> GetBeatmaps()
         {
             using (var conn = DatabaseAccess.GetConnection())
             {
                 var condition = CombineSqlConditions(
                     RankedOnly ? "`approved` >= 1" : null,
-                    "`deleted_at` IS NULL"
+                    $"`beatmap_id` >= {StartId}",
+                    "`deleted_at` IS NULL",
+                    CustomQuery
                 );
 
                 return conn.Query<int>($"SELECT `beatmap_id` FROM `osu_beatmaps` {condition}");
