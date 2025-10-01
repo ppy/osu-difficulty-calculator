@@ -93,6 +93,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                             beatmap.BeatmapInfo.OnlineID = beatmapId;
 
                             calc.Process(beatmap, ProcessingMode);
+                            calc.NotifyBeatmapReprocessed(beatmapId);
 
                             reporter.Verbose($"Difficulty updated for beatmap {beatmapId}.");
                         }

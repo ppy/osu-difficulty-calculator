@@ -69,6 +69,39 @@ namespace osu.Server.DifficultyCalculator
 
         public void ProcessLegacyAttributes(WorkingBeatmap beatmap) => run(beatmap, processLegacyAttributes);
 
+        public void NotifyBeatmapSetReprocessed(long beatmapSetId)
+        {
+            if (dryRun)
+                return;
+
+            using (var conn = DatabaseAccess.GetConnection())
+            {
+                conn.Execute(@"INSERT INTO `bss_process_queue` (`beatmapset_id`, `status`) VALUES (@beatmapset_id, 2)", new
+                {
+                    beatmapset_id = beatmapSetId,
+                });
+            }
+        }
+
+        public void NotifyBeatmapReprocessed(long beatmapId)
+        {
+            if (dryRun)
+                return;
+
+            using (var conn = DatabaseAccess.GetConnection())
+            {
+                conn.Execute(
+                    """
+                     INSERT INTO `bss_process_queue` (`beatmapset_id`, `status`)
+                     VALUES ((SELECT `beatmapset_id` FROM `osu_beatmaps` WHERE `beatmap_id` = @beatmap_id), 2)
+                     """,
+                    new
+                    {
+                        beatmap_id = beatmapId,
+                    });
+            }
+        }
+
         private void run(WorkingBeatmap beatmap, Action<ProcessableItem, MySqlConnection> callback)
         {
             try
