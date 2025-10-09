@@ -26,6 +26,9 @@ namespace osu.Server.DifficultyCalculator.Commands
         [Option(CommandOptionType.SingleValue, Template = "-c|--concurrency", Description = "Number of threads to use. Default 1.")]
         public int Concurrency { get; set; } = 1;
 
+        [Option(CommandOptionType.NoValue, Template = "--no-notify", Description = "Don't notify of beatmap reprocessing via `bss_process_queue` table. This should only be used when a full score reprocess is to be queued after difficulty calculator re-run.")]
+        public bool NoNotifyProcessing { get; set; }
+
         [Option(CommandOptionType.NoValue, Template = "-d|--force-download", Description = "Force download of all beatmaps.")]
         public bool ForceDownload { get; set; }
 
@@ -57,6 +60,9 @@ namespace osu.Server.DifficultyCalculator.Commands
                 IsQuiet = Quiet,
                 IsVerbose = Verbose
             };
+
+            if (NoNotifyProcessing)
+                reporter.Warn("Beatmap reprocessing notifications have been turned off. Unless you're planning on reprocessing all scores later, this is a bad idea.");
 
             if (Concurrency < 1)
             {
@@ -93,7 +99,8 @@ namespace osu.Server.DifficultyCalculator.Commands
                             beatmap.BeatmapInfo.OnlineID = beatmapId;
 
                             calc.Process(beatmap, ProcessingMode);
-                            calc.NotifyBeatmapReprocessed(beatmapId);
+                            if (!NoNotifyProcessing)
+                                calc.NotifyBeatmapReprocessed(beatmapId);
 
                             reporter.Verbose($"Difficulty updated for beatmap {beatmapId}.");
                         }
