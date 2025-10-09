@@ -21,14 +21,14 @@ namespace osu.Server.Queues.BeatmapProcessor
             })
         {
             this.processingMode = processingMode;
-            calculator = new ServerDifficultyCalculator(new[] { 0, 1, 2, 3 });
+            calculator = new ServerDifficultyCalculator([0, 1, 2, 3]);
         }
 
         protected override void ProcessResult(BeatmapItem item)
         {
-            using (var db = GetDatabaseConnection())
+            using (var conn = GetDatabaseConnection())
             {
-                var beatmaps = db.Query<long>("SELECT beatmap_id FROM osu_beatmaps WHERE beatmapset_id = @beatmapset_id AND deleted_at IS NULL", item);
+                var beatmaps = conn.Query<long>("SELECT beatmap_id FROM osu_beatmaps WHERE beatmapset_id = @beatmapset_id AND deleted_at IS NULL", item);
 
                 foreach (long beatmapId in beatmaps)
                 {
@@ -37,10 +37,10 @@ namespace osu.Server.Queues.BeatmapProcessor
                     // ensure the correct online id is set
                     working.BeatmapInfo.OnlineID = (int)beatmapId;
 
-                    calculator.Process(working, processingMode);
+                    calculator.Process(working, processingMode, conn);
                 }
 
-                calculator.NotifyBeatmapSetReprocessed(item.beatmapset_id);
+                calculator.NotifyBeatmapSetReprocessed(item.beatmapset_id, conn);
             }
         }
     }
