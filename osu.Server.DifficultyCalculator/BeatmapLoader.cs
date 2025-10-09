@@ -31,6 +31,7 @@ namespace osu.Server.DifficultyCalculator
 
                 var req = new WebRequest(string.Format(AppSettings.DOWNLOAD_PATH, beatmapId))
                 {
+                    Timeout = 60000,
                     AllowInsecureRequests = true
                 };
 
