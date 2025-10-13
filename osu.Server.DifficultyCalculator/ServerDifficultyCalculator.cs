@@ -15,6 +15,7 @@ using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Objects.Legacy;
 using osu.Game.Rulesets.Scoring.Legacy;
 using osu.Server.DifficultyCalculator.Commands;
+using osu.Server.QueueProcessor;
 
 namespace osu.Server.DifficultyCalculator
 {
@@ -42,21 +43,21 @@ namespace osu.Server.DifficultyCalculator
             }
         }
 
-        public void Process(WorkingBeatmap beatmap, ProcessingMode mode, MySqlConnection conn)
+        public void Process(WorkingBeatmap beatmap, ProcessingMode mode)
         {
             switch (mode)
             {
                 case ProcessingMode.All:
-                    ProcessDifficulty(beatmap, conn);
-                    ProcessLegacyAttributes(beatmap, conn);
+                    ProcessDifficulty(beatmap);
+                    ProcessLegacyAttributes(beatmap);
                     break;
 
                 case ProcessingMode.Difficulty:
-                    ProcessDifficulty(beatmap, conn);
+                    ProcessDifficulty(beatmap);
                     break;
 
                 case ProcessingMode.ScoreAttributes:
-                    ProcessLegacyAttributes(beatmap, conn);
+                    ProcessLegacyAttributes(beatmap);
                     break;
 
                 default:
@@ -64,56 +65,70 @@ namespace osu.Server.DifficultyCalculator
             }
         }
 
-        public void ProcessDifficulty(WorkingBeatmap beatmap, MySqlConnection conn) => run(beatmap, processDifficulty, conn);
+        public void ProcessDifficulty(WorkingBeatmap beatmap) => run(beatmap, processDifficulty);
 
-        public void ProcessLegacyAttributes(WorkingBeatmap beatmap, MySqlConnection conn) => run(beatmap, processLegacyAttributes, conn);
+        public void ProcessLegacyAttributes(WorkingBeatmap beatmap) => run(beatmap, processLegacyAttributes);
 
-        public void NotifyBeatmapSetReprocessed(long beatmapSetId, MySqlConnection conn)
+        public void NotifyBeatmapSetReprocessed(long beatmapSetId)
         {
             if (dryRun)
                 return;
 
-            conn.Execute(@"INSERT INTO `bss_process_queue` (`beatmapset_id`, `status`) VALUES (@beatmapset_id, 2)", new
+            using (var conn = DatabaseAccess.GetConnection())
             {
-                beatmapset_id = beatmapSetId,
-            });
+                conn.Execute(@"INSERT INTO `bss_process_queue` (`beatmapset_id`, `status`) VALUES (@beatmapset_id, 2)", new
+                {
+                    beatmapset_id = beatmapSetId,
+                });
+            }
         }
 
-        public void NotifyBeatmapReprocessed(long beatmapId, MySqlConnection conn)
+        public void NotifyBeatmapReprocessed(long beatmapId)
         {
             if (dryRun)
                 return;
 
-            conn.Execute(
-                """
-                INSERT INTO `bss_process_queue` (`beatmapset_id`, `status`)
-                VALUES ((SELECT `beatmapset_id` FROM `osu_beatmaps` WHERE `beatmap_id` = @beatmap_id), 2)
-                """,
-                new
-                {
-                    beatmap_id = beatmapId,
-                });
+            using (var conn = DatabaseAccess.GetConnection())
+            {
+                conn.Execute(
+                    """
+                     INSERT INTO `bss_process_queue` (`beatmapset_id`, `status`)
+                     VALUES ((SELECT `beatmapset_id` FROM `osu_beatmaps` WHERE `beatmap_id` = @beatmap_id), 2)
+                     """,
+                    new
+                    {
+                        beatmap_id = beatmapId,
+                    });
+            }
         }
 
-        private void run(WorkingBeatmap beatmap, Action<ProcessableItem, MySqlConnection> callback, MySqlConnection conn)
+        private void run(WorkingBeatmap beatmap, Action<ProcessableItem, MySqlConnection> callback)
         {
             try
             {
-                var ranked = conn.QuerySingleOrDefault<int>("SELECT `approved` FROM `osu_beatmaps` WHERE `beatmap_id` = @BeatmapId", new
-                {
-                    BeatmapId = beatmap.BeatmapInfo.OnlineID
-                }) > 0;
+                bool ranked;
 
-                if (ranked && beatmap.Beatmap.HitObjects.Count == 0)
-                    throw new ArgumentException($"Ranked beatmap {beatmap.BeatmapInfo.OnlineInfo} has 0 hitobjects!");
-
-                if (processConverts && beatmap.BeatmapInfo.Ruleset.OnlineID == 0)
+                using (var conn = DatabaseAccess.GetConnection())
                 {
-                    foreach (var ruleset in processableRulesets)
-                        callback(new ProcessableItem(beatmap, ruleset, ranked), conn);
+                    ranked = conn.QuerySingleOrDefault<int>("SELECT `approved` FROM `osu_beatmaps` WHERE `beatmap_id` = @BeatmapId", new
+                    {
+                        BeatmapId = beatmap.BeatmapInfo.OnlineID
+                    }) > 0;
+
+                    if (ranked && beatmap.Beatmap.HitObjects.Count == 0)
+                        throw new ArgumentException($"Ranked beatmap {beatmap.BeatmapInfo.OnlineInfo} has 0 hitobjects!");
                 }
-                else if (processableRulesets.Any(r => r.RulesetInfo.OnlineID == beatmap.BeatmapInfo.Ruleset.OnlineID))
-                    callback(new ProcessableItem(beatmap, beatmap.BeatmapInfo.Ruleset.CreateInstance(), ranked), conn);
+
+                using (var conn = DatabaseAccess.GetConnection())
+                {
+                    if (processConverts && beatmap.BeatmapInfo.Ruleset.OnlineID == 0)
+                    {
+                        foreach (var ruleset in processableRulesets)
+                            callback(new ProcessableItem(beatmap, ruleset, ranked), conn);
+                    }
+                    else if (processableRulesets.Any(r => r.RulesetInfo.OnlineID == beatmap.BeatmapInfo.Ruleset.OnlineID))
+                        callback(new ProcessableItem(beatmap, beatmap.BeatmapInfo.Ruleset.CreateInstance(), ranked), conn);
+                }
             }
             catch (Exception e)
             {

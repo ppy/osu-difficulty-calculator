@@ -8,7 +8,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
-using osu.Server.QueueProcessor;
 
 namespace osu.Server.DifficultyCalculator.Commands
 {
@@ -85,7 +84,6 @@ namespace osu.Server.DifficultyCalculator.Commands
 
                 tasks[i] = Task.Factory.StartNew(() =>
                 {
-                    using var conn = DatabaseAccess.GetConnection();
                     var calc = new ServerDifficultyCalculator(Rulesets, Converts, DryRun);
 
                     while (beatmaps.TryDequeue(out int beatmapId))
@@ -100,9 +98,9 @@ namespace osu.Server.DifficultyCalculator.Commands
                             // ensure the correct online id is set
                             beatmap.BeatmapInfo.OnlineID = beatmapId;
 
-                            calc.Process(beatmap, ProcessingMode, conn);
+                            calc.Process(beatmap, ProcessingMode);
                             if (!NoNotifyProcessing)
-                                calc.NotifyBeatmapReprocessed(beatmapId, conn);
+                                calc.NotifyBeatmapReprocessed(beatmapId);
 
                             reporter.Verbose($"Difficulty updated for beatmap {beatmapId}.");
                         }
