@@ -13,15 +13,15 @@
         <PackageReference Include="Dapper" Version="2.1.66" />
         <PackageReference Include="Dapper.Contrib" Version="2.0.78" />
         <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
-        <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.9" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.9" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.9" />
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.10" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.10" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.10" />
         <PackageReference Include="MySqlConnector" Version="2.4.0" />
-        <PackageReference Include="ppy.osu.Game" Version="2025.1007.0" />
-        <PackageReference Include="ppy.osu.Game.Rulesets.Osu" Version="2025.1007.0" />
-        <PackageReference Include="ppy.osu.Game.Rulesets.Taiko" Version="2025.1007.0" />
-        <PackageReference Include="ppy.osu.Game.Rulesets.Catch" Version="2025.1007.0" />
-        <PackageReference Include="ppy.osu.Game.Rulesets.Mania" Version="2025.1007.0" />
+        <PackageReference Include="ppy.osu.Game" Version="2025.1029.0" />
+        <PackageReference Include="ppy.osu.Game.Rulesets.Osu" Version="2025.1029.0" />
+        <PackageReference Include="ppy.osu.Game.Rulesets.Taiko" Version="2025.1029.0" />
+        <PackageReference Include="ppy.osu.Game.Rulesets.Catch" Version="2025.1029.0" />
+        <PackageReference Include="ppy.osu.Game.Rulesets.Mania" Version="2025.1029.0" />
         <PackageReference Include="ppy.osu.Server.OsuQueueProcessor" Version="2025.317.0" />
     </ItemGroup>
     <ItemGroup>
