@@ -12,12 +12,12 @@ namespace osu.Server.DifficultyCalculator
         /// <summary>
         /// Whether verbose output should be displayed.
         /// </summary>
-        public bool IsVerbose { get; set; }
+        public bool IsVerbose { get; init; }
 
         /// <summary>
         /// Whether quiet output should be displayed.
         /// </summary>
-        public bool IsQuiet { get; set; }
+        public bool IsQuiet { get; init; }
 
         private readonly object writeLock = new object();
         private readonly IConsole console;
