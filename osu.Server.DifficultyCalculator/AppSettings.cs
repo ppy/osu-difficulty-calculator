@@ -23,6 +23,11 @@ namespace osu.Server.DifficultyCalculator
         public static readonly string BEATMAPS_PATH;
 
         /// <summary>
+        /// Whether to verify the retrieved or cached `.osu` file matches database hashes before running processing.
+        /// </summary>
+        public static readonly bool VERIFY_BEATMAP_HASHES;
+
+        /// <summary>
         /// Whether beatmaps should be downloaded if they don't exist in <see cref="BEATMAPS_PATH"/>.
         /// </summary>
         public static readonly bool ALLOW_DOWNLOAD;
@@ -44,6 +49,8 @@ namespace osu.Server.DifficultyCalculator
             SKIP_INSERT_ATTRIBUTES = Environment.GetEnvironmentVariable("SKIP_INSERT_ATTRIBUTES") == "1";
             ALLOW_DOWNLOAD = Environment.GetEnvironmentVariable("ALLOW_DOWNLOAD") == "1";
             SAVE_DOWNLOADED = Environment.GetEnvironmentVariable("SAVE_DOWNLOADED") == "1";
+
+            VERIFY_BEATMAP_HASHES = Environment.GetEnvironmentVariable("VERIFY_BEATMAP_HASHES") == "1";
 
             BEATMAPS_PATH = Environment.GetEnvironmentVariable("BEATMAPS_PATH") ?? "osu";
             DOWNLOAD_PATH = Environment.GetEnvironmentVariable("BEATMAP_DOWNLOAD_PATH") ?? "https://osu.ppy.sh/osu/{0}";

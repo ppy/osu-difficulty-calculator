@@ -3,8 +3,10 @@
 
 using System;
 using System.IO;
+using Dapper;
 using McMaster.Extensions.CommandLineUtils;
 using osu.Framework.Audio.Track;
+using osu.Framework.Extensions;
 using osu.Framework.Graphics.Textures;
 using osu.Framework.IO.Network;
 using osu.Game.Beatmaps;
@@ -15,6 +17,7 @@ using osu.Game.Rulesets.Mania;
 using osu.Game.Rulesets.Osu;
 using osu.Game.Rulesets.Taiko;
 using osu.Game.Skinning;
+using osu.Server.QueueProcessor;
 
 namespace osu.Server.DifficultyCalculator
 {
@@ -24,7 +27,32 @@ namespace osu.Server.DifficultyCalculator
         {
             string fileLocation = Path.Combine(AppSettings.BEATMAPS_PATH, beatmapId.ToString()) + ".osu";
 
-            if ((forceDownload || !File.Exists(fileLocation)) && AppSettings.ALLOW_DOWNLOAD)
+            bool cachedBeatmapValid = File.Exists(fileLocation);
+
+            if (cachedBeatmapValid && AppSettings.VERIFY_BEATMAP_HASHES)
+            {
+                using (var conn = DatabaseAccess.GetConnection())
+                {
+                    using (var stream = File.OpenRead(fileLocation))
+                    {
+                        string localHash = stream.ComputeMD5Hash();
+                        string serverHash = conn.QuerySingle<string>("SELECT checksum FROM osu_beatmaps WHERE beatmap_id = @beatmap_id", new
+                        {
+                            beatmap_id = beatmapId
+                        });
+
+                        if (localHash != serverHash)
+                        {
+                            reporter?.Warn($"Checksum didn't match for {beatmapId}, ignoring cache");
+
+                            File.Delete(fileLocation);
+                            cachedBeatmapValid = false;
+                        }
+                    }
+                }
+            }
+
+            if ((forceDownload || !cachedBeatmapValid) && AppSettings.ALLOW_DOWNLOAD)
             {
                 if (verbose)
                     reporter?.Verbose($"Downloading {beatmapId}.");
@@ -66,7 +94,7 @@ namespace osu.Server.DifficultyCalculator
                 return new LoaderWorkingBeatmap(stream);
             }
 
-            if (!File.Exists(fileLocation))
+            if (!cachedBeatmapValid)
                 throw new Exception("Beatmap file does not exist and was not downloaded.");
 
             return new LoaderWorkingBeatmap(fileLocation);
