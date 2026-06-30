@@ -23,7 +23,7 @@ namespace osu.Server.DifficultyCalculator
 {
     public static class BeatmapLoader
     {
-        public static WorkingBeatmap GetBeatmap(int beatmapId, bool verbose = false, bool forceDownload = true, IReporter? reporter = null)
+        public static WorkingBeatmap GetBeatmap(int beatmapId, bool verbose = false, IReporter? reporter = null)
         {
             string fileLocation = Path.Combine(AppSettings.BEATMAPS_PATH, beatmapId.ToString()) + ".osu";
 
@@ -52,7 +52,7 @@ namespace osu.Server.DifficultyCalculator
                 }
             }
 
-            if ((forceDownload || !cachedBeatmapValid) && AppSettings.ALLOW_DOWNLOAD)
+            if (!cachedBeatmapValid && AppSettings.ALLOW_DOWNLOAD)
             {
                 if (verbose)
                     reporter?.Verbose($"Downloading {beatmapId}.");

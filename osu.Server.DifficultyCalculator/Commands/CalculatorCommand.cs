@@ -29,9 +29,6 @@ namespace osu.Server.DifficultyCalculator.Commands
         [Option(CommandOptionType.NoValue, Template = "--no-notify", Description = "Don't notify of beatmap reprocessing via `bss_process_queue` table. This should only be used when a full score reprocess is to be queued after difficulty calculator re-run.")]
         public bool NoNotifyProcessing { get; set; }
 
-        [Option(CommandOptionType.NoValue, Template = "-d|--force-download", Description = "Force download of all beatmaps.")]
-        public bool ForceDownload { get; set; }
-
         [Option(CommandOptionType.NoValue, Template = "-v|--verbose", Description = "Provide verbose console output.")]
         public bool Verbose { get; set; }
 
@@ -93,7 +90,7 @@ namespace osu.Server.DifficultyCalculator.Commands
 
                         try
                         {
-                            var beatmap = BeatmapLoader.GetBeatmap(beatmapId, Verbose, ForceDownload, reporter);
+                            var beatmap = BeatmapLoader.GetBeatmap(beatmapId, Verbose, reporter);
 
                             // ensure the correct online id is set
                             beatmap.BeatmapInfo.OnlineID = beatmapId;
