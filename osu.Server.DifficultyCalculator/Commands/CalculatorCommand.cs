@@ -26,11 +26,10 @@ namespace osu.Server.DifficultyCalculator.Commands
         [Option(CommandOptionType.SingleValue, Template = "-c|--concurrency", Description = "Number of threads to use. Default 1.")]
         public int Concurrency { get; set; } = 1;
 
-        [Option(CommandOptionType.NoValue, Template = "--no-notify", Description = "Don't notify of beatmap reprocessing via `bss_process_queue` table. This should only be used when a full score reprocess is to be queued after difficulty calculator re-run.")]
+        [Option(CommandOptionType.NoValue, Template = "--no-notify",
+            Description =
+                "Don't notify of beatmap reprocessing via `bss_process_queue` table. This should only be used when a full score reprocess is to be queued after difficulty calculator re-run.")]
         public bool NoNotifyProcessing { get; set; }
-
-        [Option(CommandOptionType.NoValue, Template = "-d|--force-download", Description = "Force download of all beatmaps.")]
-        public bool ForceDownload { get; set; }
 
         [Option(CommandOptionType.NoValue, Template = "-v|--verbose", Description = "Provide verbose console output.")]
         public bool Verbose { get; set; }
@@ -72,6 +71,9 @@ namespace osu.Server.DifficultyCalculator.Commands
 
             threadBeatmapIds = new int[Concurrency];
 
+            if (AppSettings.ALLOW_SEEDED_DOWNLOAD)
+                BeatmapLoader.PopulateCacheWithSeededFiles(reporter);
+
             var beatmaps = new ConcurrentQueue<int>(GetBeatmaps());
 
             totalBeatmaps = beatmaps.Count;
@@ -93,7 +95,7 @@ namespace osu.Server.DifficultyCalculator.Commands
 
                         try
                         {
-                            var beatmap = BeatmapLoader.GetBeatmap(beatmapId, Verbose, ForceDownload, reporter);
+                            var beatmap = BeatmapLoader.GetBeatmap(beatmapId, Verbose, reporter);
 
                             // ensure the correct online id is set
                             beatmap.BeatmapInfo.OnlineID = beatmapId;

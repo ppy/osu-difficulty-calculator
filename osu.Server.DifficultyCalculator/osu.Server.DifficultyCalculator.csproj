@@ -17,11 +17,11 @@
         <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.10" />
         <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.10" />
         <PackageReference Include="MySqlConnector" Version="2.4.0" />
-        <PackageReference Include="ppy.osu.Game" Version="2025.1029.0" />
-        <PackageReference Include="ppy.osu.Game.Rulesets.Osu" Version="2025.1029.0" />
-        <PackageReference Include="ppy.osu.Game.Rulesets.Taiko" Version="2025.1029.0" />
-        <PackageReference Include="ppy.osu.Game.Rulesets.Catch" Version="2025.1029.0" />
-        <PackageReference Include="ppy.osu.Game.Rulesets.Mania" Version="2025.1029.0" />
+        <PackageReference Include="ppy.osu.Game" Version="2026.621.0" />
+        <PackageReference Include="ppy.osu.Game.Rulesets.Osu" Version="2026.621.0" />
+        <PackageReference Include="ppy.osu.Game.Rulesets.Taiko" Version="2026.621.0" />
+        <PackageReference Include="ppy.osu.Game.Rulesets.Catch" Version="2026.621.0" />
+        <PackageReference Include="ppy.osu.Game.Rulesets.Mania" Version="2026.621.0" />
         <PackageReference Include="ppy.osu.Server.OsuQueueProcessor" Version="2025.317.0" />
     </ItemGroup>
     <ItemGroup>

@@ -3,8 +3,12 @@
 
 using System;
 using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+using Dapper;
 using McMaster.Extensions.CommandLineUtils;
 using osu.Framework.Audio.Track;
+using osu.Framework.Extensions;
 using osu.Framework.Graphics.Textures;
 using osu.Framework.IO.Network;
 using osu.Game.Beatmaps;
@@ -15,16 +19,129 @@ using osu.Game.Rulesets.Mania;
 using osu.Game.Rulesets.Osu;
 using osu.Game.Rulesets.Taiko;
 using osu.Game.Skinning;
+using osu.Server.QueueProcessor;
+using SharpCompress.Archives.Tar;
+using SharpCompress.Compressors;
+using SharpCompress.Compressors.BZip2;
 
 namespace osu.Server.DifficultyCalculator
 {
     public static class BeatmapLoader
     {
-        public static WorkingBeatmap GetBeatmap(int beatmapId, bool verbose = false, bool forceDownload = true, IReporter? reporter = null)
+        public static void PopulateCacheWithSeededFiles(IReporter? reporter = null)
+        {
+            reporter?.Output("Populating local cache from seeded beatmaps...");
+
+            var req = new WebRequest("https://data.ppy.sh/");
+            req.Perform();
+            string response = req.GetResponseString()!;
+            var matches = Regex.Matches(response, "[0-9]+_[0-9]+_[0-9]+_osu_files.tar.bz2");
+
+            var tarBz2Filename = matches.Last().Value;
+
+            // If the archive is present locally and cache has many files, assume it's already been extracted for simplicity.
+            int localBeatmaps = Directory.GetFiles(AppSettings.BEATMAPS_PATH).Length;
+
+            if (File.Exists(tarBz2Filename) && localBeatmaps > 10000)
+            {
+                reporter?.Output($"Found {tarBz2Filename} locally and populated cache ({localBeatmaps:N0} files), assuming cache is populated already.");
+                reporter?.Output("Delete this file to repopulate cache.");
+                return;
+            }
+
+            string tarFilename = tarBz2Filename.Replace(".bz2", string.Empty);
+
+            try
+            {
+                if (!File.Exists(tarBz2Filename))
+                {
+                    req = new FileWebRequest(tarBz2Filename, $"https://data.ppy.sh/{tarBz2Filename}");
+                    int? progress = null;
+                    req.DownloadProgress += (current, total) =>
+                    {
+                        int roundedProgress = (int)((double)current / total * 100);
+
+                        if (progress != roundedProgress)
+                        {
+                            if (roundedProgress == 0)
+                                reporter?.Verbose($"Downloading {tarBz2Filename}... {total / 1048576:N0} mb");
+                            else if (roundedProgress % 10 == 0)
+                                reporter?.Verbose($"Downloading {tarBz2Filename}... {roundedProgress}%");
+                        }
+
+                        progress = roundedProgress;
+                    };
+                    req.Perform();
+                }
+
+                if (!File.Exists(tarFilename))
+                {
+                    reporter?.Verbose($"Extracting {tarBz2Filename}...");
+
+                    using (var stream = File.OpenRead(tarBz2Filename))
+                    using (var outStream = File.Create(tarFilename))
+                    using (var bz2 = BZip2Stream.Create(stream, CompressionMode.Decompress, false))
+                        bz2.CopyTo(outStream);
+                }
+
+                using var archive = TarArchive.OpenArchive(tarFilename);
+
+                foreach (var entry in archive.Entries)
+                {
+                    if (entry.Size == 0)
+                        continue;
+
+                    string filename = Path.GetFileName(entry.Key!);
+
+                    reporter?.Verbose($"Extracting {filename}...");
+
+                    using (var outStream = File.Create(Path.Combine(AppSettings.BEATMAPS_PATH, filename)))
+                    using (var stream = entry.OpenEntryStream())
+                        stream.CopyTo(outStream);
+                }
+            }
+            catch
+            {
+                // If any error occurs, delete the archive to allow a retry next run.
+                File.Delete(tarBz2Filename);
+                throw;
+            }
+            finally
+            {
+                File.Delete(tarFilename);
+            }
+        }
+
+        public static WorkingBeatmap GetBeatmap(int beatmapId, bool verbose = false, IReporter? reporter = null)
         {
             string fileLocation = Path.Combine(AppSettings.BEATMAPS_PATH, beatmapId.ToString()) + ".osu";
 
-            if ((forceDownload || !File.Exists(fileLocation)) && AppSettings.ALLOW_DOWNLOAD)
+            bool cachedBeatmapValid = File.Exists(fileLocation);
+
+            if (cachedBeatmapValid && AppSettings.VERIFY_BEATMAP_HASHES)
+            {
+                using (var conn = DatabaseAccess.GetConnection())
+                {
+                    using (var stream = File.OpenRead(fileLocation))
+                    {
+                        string localHash = stream.ComputeMD5Hash();
+                        string serverHash = conn.QuerySingle<string>("SELECT checksum FROM osu_beatmaps WHERE beatmap_id = @beatmap_id", new
+                        {
+                            beatmap_id = beatmapId
+                        });
+
+                        if (localHash != serverHash)
+                        {
+                            reporter?.Warn($"Checksum didn't match for {beatmapId}, ignoring cache");
+
+                            File.Delete(fileLocation);
+                            cachedBeatmapValid = false;
+                        }
+                    }
+                }
+            }
+
+            if (!cachedBeatmapValid && AppSettings.ALLOW_DOWNLOAD)
             {
                 if (verbose)
                     reporter?.Verbose($"Downloading {beatmapId}.");
@@ -66,7 +183,7 @@ namespace osu.Server.DifficultyCalculator
                 return new LoaderWorkingBeatmap(stream);
             }
 
-            if (!File.Exists(fileLocation))
+            if (!cachedBeatmapValid)
                 throw new Exception("Beatmap file does not exist and was not downloaded.");
 
             return new LoaderWorkingBeatmap(fileLocation);
