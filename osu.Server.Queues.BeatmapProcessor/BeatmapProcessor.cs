@@ -26,9 +26,9 @@ namespace osu.Server.Queues.BeatmapProcessor
 
         protected override void ProcessResult(BeatmapItem item)
         {
-            using (var db = GetDatabaseConnection())
+            using (var conn = DatabaseAccess.GetConnection())
             {
-                var beatmaps = db.Query<long>("SELECT beatmap_id FROM osu_beatmaps WHERE beatmapset_id = @beatmapset_id AND deleted_at IS NULL", item);
+                var beatmaps = conn.Query<long>("SELECT beatmap_id FROM osu_beatmaps WHERE beatmapset_id = @beatmapset_id AND deleted_at IS NULL", item);
 
                 foreach (long beatmapId in beatmaps)
                 {
