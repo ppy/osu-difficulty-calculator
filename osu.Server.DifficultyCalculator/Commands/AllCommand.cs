@@ -31,7 +31,7 @@ namespace osu.Server.DifficultyCalculator.Commands
                     CustomQuery
                 );
 
-                return conn.Query<int>($"SELECT `beatmap_id` FROM `osu_beatmaps` {condition}");
+                return conn.Query<int>($"SELECT `beatmap_id` FROM `osu_beatmaps` {condition}", commandTimeout: 3600);
             }
         }
     }
