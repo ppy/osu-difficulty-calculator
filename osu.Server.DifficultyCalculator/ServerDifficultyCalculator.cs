@@ -194,13 +194,13 @@ namespace osu.Server.DifficultyCalculator
 
                 LegacyMods legacyMods = item.Ruleset.ConvertToLegacyMods(attribute.Mods);
 
-                difficultyValues.Append($"({item.BeatmapID}, {item.RulesetID}, {(int)legacyMods}, {attribute.StarRating}),");
+                difficultyValues.Append(FormattableString.Invariant($"({item.BeatmapID}, {item.RulesetID}, {(int)legacyMods}, {attribute.StarRating}),"));
 
                 if (item.Ranked && !AppSettings.SKIP_INSERT_ATTRIBUTES)
                 {
                     foreach (var mapping in attribute.ToDatabaseAttributes())
                     {
-                        attribsValues.Append($"({item.BeatmapID}, {item.RulesetID}, {(int)legacyMods}, {mapping.attributeId}, {Convert.ToSingle(mapping.value)}),");
+                        attribsValues.Append(FormattableString.Invariant($"({item.BeatmapID}, {item.RulesetID}, {(int)legacyMods}, {mapping.attributeId}, {Convert.ToSingle(mapping.value)}),"));
                     }
                 }
 
