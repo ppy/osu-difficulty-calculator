@@ -37,7 +37,7 @@ jobs:
           exit $exit_code
 
       - name: InspectCode
-        uses: JetBrains/ReSharper-InspectCode@v0.11
+        uses: JetBrains/ReSharper-InspectCode@v2026.3.0
         with:
           solution: ./osu.Server.DifficultyCalculator.sln
           caches-home: inspectcode
